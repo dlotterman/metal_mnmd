@@ -12,13 +12,13 @@ variable "project_id" {
 variable "plan" {
   type        = string
   description = "Metal server type you plan to deploy"
-  default     = "c3.small.x86"
+  default     = "c3.medium.x86"
 }
 
 variable "operating_system" {
   type        = string
   description = "OS you want to deploy"
-  default     = "ubuntu_20_04"
+  default     = "ubuntu_24_04"
 }
 
 variable "metro" {
@@ -30,93 +30,11 @@ variable "metro" {
 variable "server_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
-  default     = 1
+  default     = 4
 }
 
-variable "vlan_count" {
-  type        = number
-  description = "Metal's Metro VLAN"
-  default     = 1
-}
-
-variable "metal_asn" {
-  type        = number
-  description = "Metal's local ASN"
-  default     = 65100
-}
-
-variable "customer_asn" {
-  type        = number
-  description = "Metal customer's ASN peering with Metal"
-  default     = 100
-}
-
-variable "bgp_peer_subnet_pri" {
-  type        = string
-  description = "Primary BGP peering subnet"
-  default     = "169.254.100.0/30"
-}
-
-variable "bgp_peer_subnet_sec" {
-  type        = string
-  description = "Secondary BGP peering subnet"
-  default     = "169.254.100.8/30"
-}
-
-variable "metal_bgp_ip_pri" {
-  type        = string
-  description = "Metal's Primary local BGP IP peering with customer's BGP IP"
-  default     = "169.254.100.1"
-}
-
-variable "metal_bgp_ip_sec" {
-  type        = string
-  description = "Metal's Secondary local BGP IP peering with customer's BGP IP"
-  default     = "169.254.100.9"
-}
-
-variable "customer_bgp_ip_pri" {
-  type        = string
-  description = "Customer's BGP IP Peering with metal's Primary BGP IP"
-  default     = "169.254.100.2"
-}
-
-variable "customer_bgp_ip_sec" {
-  type        = string
-  description = "Customer's BGP IP Peering with metal's Secondary BGP IP"
-  default     = "169.254.100.10"
-}
-variable "gateway_count" {
-  type        = number
-  description = "number of Metal Gateway"
-  default     = 1
-}
-
-variable "dedicated_port_id" {
-  type        = string
-  description = "Your Metal's dedicated fabric port's UUID. You can retrieve the UUID from Metal's portal"
-  default     = "123456789"
-}
-
-variable "nni_vlan" {
-  type        = number
-  description = "Your fabric virtual circuit's NNI VLAN connecting to your VRF"
-  default     = 999
-}
-
-variable "ip_ranges" {
-  type        = list(any)
-  description = "Your reserved IP ranges"
-}
-
-variable "bgp_md5_pri" {
-  type        = string
-  description = "BGP password of primary connection"
-  default     = null
-}
-
-variable "bgp_md5_sec" {
-  type        = string
-  description = "BGP password of secondary connection"
-  default     = null
+variable "m_node_vlans" {
+  description = "VLANs for MinIO"
+  type        = list(string)
+  default     = [3870, 3873, 3895]
 }
