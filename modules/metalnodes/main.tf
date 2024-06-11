@@ -23,7 +23,7 @@ variable "metal_vlan" {}
 # create metal nodes
 resource "equinix_metal_device" "metal_nodes" {
   count            = var.node_count
-  hostname         = format("mymetal-node-%d", count.index + 1)
+  hostname         = format("m-%d", count.index + 1)
   plan             = var.plan
   metro            = var.metro
   operating_system = var.operating_system
@@ -31,6 +31,7 @@ resource "equinix_metal_device" "metal_nodes" {
   project_id       = var.project_id
   user_data        = data.cloudinit_config.config[count.index].rendered
   depends_on       = [var.metal_vlan]
+  behavior {allow_changes=["user_data"]}
 }
 
 data "cloudinit_config" "config" {

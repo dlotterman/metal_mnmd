@@ -157,6 +157,7 @@ write_files:
       NUM_INSTANCES=1
       MGROUPS=$(grep MGROUP /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MINIO_VOL_STR=""
+      MGROUP1_2-2
       for MGROUP in $MGROUPS; do
         MGROUP_FIRST=$(echo $MGROUP | awk -F '-' '{print$1}')
         MGROUP_LAST=$(echo $MGROUP | awk -F '-' '{print$NF}')
@@ -164,7 +165,6 @@ write_files:
         MINIO_VOL_STR="${MINIO_VOL_STR} $MGROUP_VOL_STR"
         let NUM_INSTANCES=NUM_INSTANCES+1
       done
-
       MRESTART=$(grep MRESTART_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MREBALANCE=$(grep MREBALANCE_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MDECOM=$(grep MDECOM_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
@@ -224,10 +224,10 @@ write_files:
       rm /tmp/.metal_tag_extend.env > /dev/null 2>&1
       rm /tmp/.metadata_update > /dev/null 2>&1
       for TAG in $TAGS; do
-          if [ "$TAG" =~ "MSUBNET" ]; then
+          if [[ "$TAG" =~ .*"MSUBNET".* ]]; then
               bash /var/tmp/metal/bin/minio_network_mangle.sh
               bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
-          if [ "$TAG" = "minio" ]; then
+          elif [[ "$TAG" = "minio" ]]; then
             if test ! -f /var/tmp/metal/bin/minio_install_mangle.done; then
               logger "starting minio install mangles"
               bash /var/tmp/metal/bin/minio_disk_mangle.sh
