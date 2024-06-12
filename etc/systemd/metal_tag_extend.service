@@ -1,0 +1,8 @@
+[Unit]
+Description=metal_tag_extend
+After=multi-user.target
+[Service]
+Type=idle
+ExecStart=/bin/bash /opt/equinix/metal/bin/metal_tag_extend.sh
+[Install]
+WantedBy=timers.target

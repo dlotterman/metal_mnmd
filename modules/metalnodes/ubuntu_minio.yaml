@@ -32,6 +32,8 @@ packages:
   - dnsmasq
   - prometheus-node-exporter
   - prometheus
+  - git
+  - update-notifier-common
 
 runcmd:
   - [systemctl, enable, --now, ufw]
@@ -54,7 +56,7 @@ runcmd:
   - [bash, /usr/lib/apt/apt.systemd.daily]
   - [systemctl, reset-failed]
 
-write_files:
+writefiles:
   - owner: root:root
     path: /etc/apt/apt.conf.d/50unattended-upgrades
     content: |
@@ -113,6 +115,25 @@ write_files:
     content: |
       PermitRootLogin no
 
+
+  - path: "/opt/equinix/metal/bin/equinix_metal_mnmd_deploy.sh"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      logger "/opt/equinix/metal/bin/metal_mnmd_deploy.sh sourced / executed"
+      mkdir -p /opt/equinix/.tmp/
+      if test -f /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh; then
+        source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
+      fi
+      mkdir -p /opt/equinix/metal/tmp
+      if [ -n "$MMNMD_BRANCH" ]; then
+        git clone https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      else
+        git clone -b $MMNMD_BRANCH https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      fi
+      rsync /opt/equinix/metal/tmp/metal_mnmd/bin/* /opt/equinix/metal/bin/
+
   - path: "/var/tmp/metal/bin/sharedlib.sh"
     permissions: "0644"
     owner: "root:root"
@@ -149,20 +170,16 @@ write_files:
       fi
       MINIO_INSTANCE=$(hostname | awk -F '-' '{print$NF}')
       MINIO_ROUTES=$(grep MROUTES /var/tmp/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
-      if [[ "$NUM_INTERFACES" == 4 ]]; then
-          BOND="bond1"
-      else
-          BOND="bond0"
-      fi
-      NUM_INSTANCES=1
+      NUM_INSTANCES=0
       MGROUPS=$(grep MGROUP /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MINIO_VOL_STR=""
       for MGROUP in $MGROUPS; do
         MGROUP_FIRST=$(echo $MGROUP | awk -F '-' '{print$1}')
         MGROUP_LAST=$(echo $MGROUP | awk -F '-' '{print$NF}')
         MGROUP_VOL_STR="https://m-{$MGROUP_FIRST...$MGROUP_LAST}.0.private:9000/mnt/disk{1...$NUM_DRIVES}/minio"
+        NUM_IN_GROUP=$((MGROUP_LAST-MGROUP_FIRST+1))
         MINIO_VOL_STR="${MINIO_VOL_STR} $MGROUP_VOL_STR"
-        let NUM_INSTANCES=NUM_INSTANCES+1
+        NUM_INSTANCES=$((NUM_INSTANCES+NUM_IN_GROUP+1))
       done
       MRESTART=$(grep MRESTART_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MREBALANCE=$(grep MREBALANCE_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
@@ -170,6 +187,8 @@ write_files:
       CURRENT_TS=$(date +%s)
       FUTURE_TS=$(($CURRENT_TS + 1200))
       UPDATE_TS=$(grep MUPDATE_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      START_TS=$(($UPDATE_TS + 2))
+      POST_UPDATE_TS=$(($UPDATE_TS + 45))
       ANETWORKS=$(grep ANETWORK /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       AROUTES=$(grep AROUTE /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 
@@ -230,7 +249,10 @@ write_files:
               bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
               bash /var/tmp/metal/bin/minio_disk_mangle.sh
               bash /var/tmp/metal/bin/minio_install_mangle.sh
+            else
+              bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
             fi
+
           fi
       done
 
@@ -277,7 +299,6 @@ write_files:
             exit 0
         elif [[ "$UPDATE_TS" -lt "$FUTURE_TS" ]]; then
             logger "update $UPDATE_TS within scheduling window, proceeding"
-            true
         fi
         MINIO_STATUS=$(mc --insecure admin info object_private | tail -1 | awk '{print$4}')
         if [[ "$MINIO_STATUS" == 0 ]]; then
@@ -292,6 +313,7 @@ write_files:
         mc --insecure admin cluster iam export object_private
         mv object_private-iam-info.zip /var/tmp/tmp/$UPDATE_TS_object_private-iam-info.zip
         if [[ "$MREBALANCE" == "yes" ]]; then
+            logger "rebalancing"
             mc --insecure admin rebalance start object_private
             logger "minio rebalance started"
             exit 0
@@ -320,15 +342,17 @@ write_files:
         chmod +x mc
         mv minio /usr/local/bin/
         mv mc /usr/local/bin/
+        cp /etc/default/minio /var/tmp/metal/tmp/$UPDATE_TS_default_minio
         cat > /etc/default/minio << EOL
-        MINIO_VOLUMES=$MINIO_VOL_STR
+        MINIO_VOLUMES="$MINIO_VOL_STR"
         MINIO_OPTS="--console-address :9001"
         MINIO_ROOT_USER=minioadmin
         MINIO_ROOT_PASSWORD=Equinixmetal05
         MINIO_SERVER_URL="https://object.0.private:9000"
         EOL
         if [[ "$MRESTART" == "yes" ]]; then
-            systemd-run --on-calendar "$(date -d @"$UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl restart minio
+            systemd-run --on-calendar "$(date -d @"$UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl stop minio
+            systemd-run --on-calendar "$(date -d @"$START_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl start minio
             logger "minio restart scheduled"
         fi
         if [[ "$MDECOM" == "yes" ]]; then
@@ -426,7 +450,9 @@ write_files:
                 mkdir /mnt/disk$COUNTER
                 udevadm settle
                 sync
-                sleep 1
+                sleep 5
+                udevadm settle
+                sync
                 DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
                 cat > /etc/systemd/system/mnt-disk$COUNTER.mount << EOL
         [Unit]
@@ -464,8 +490,13 @@ write_files:
     owner: root:root
     append: false
     content: |
-        logger "running /var/tmp/metal/bin/minio_network_mangle.sh"
         source /var/tmp/metal/bin/sharedlib.sh
+        if test ! -f /var/tmp/metal/bin/minio_network_mangle; then
+                logger "running /var/tmp/metal/bin/minio_network_mangle.sh"
+        else
+                logger "exiting /var/tmp/metal/bin/minio_network_mangle.sh, lock exists"
+                exit 0
+        fi
         cp /etc/network/interfaces /var/tmp/metal/tmp/interfaces.orig
         echo "" >> /etc/network/interfaces
         echo "" >> /etc/network/interfaces
@@ -485,6 +516,7 @@ write_files:
         ufw allow from $MINIO_SUBNET.0/24 to any port 53
         ufw allow from $MINIO_SUBNET.0/24 to any port 9100
         ifup $BOND.$MINIO_VLAN
+        touch /var/tmp/metal/bin/minio_network_mangle.done
 
   - path: /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
     owner: root:root
@@ -492,6 +524,7 @@ write_files:
     content: |
         logger "running /var/tmp/metal/bin/metal_dnsmasq_mangle.sh"
         source /var/tmp/metal/bin/sharedlib.sh
+        mkdir -p /etc/dnsmasq.d/
         cat > /etc/dnsmasq.conf << EOL
         expand-hosts
         domain-needed
@@ -511,13 +544,14 @@ write_files:
         listen-address=127.0.0.53
         conf-dir=/etc/dnsmasq.d/
         EOL
-        rm /etc/dnsmasq.d/minio.conf
+        rm /etc/dnsmasq.d/minio.conf > /dev/null 2>&1
         for i in $(seq 2 $NUM_INSTANCES); do
                 echo "host-record=object.0.private,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
         done
         systemctl disable --now systemd-resolved.service
         sleep 1
         systemctl enable --now dnsmasq.service
+        systemctl restart dnsmasq.service
 
   - path: /var/tmp/metal/bin/minio_install_mangle.sh
     owner: root:root
@@ -556,7 +590,7 @@ write_files:
         EOL
         chown -R minio-user /home/minio-user/.minio/certs
         cat > /etc/default/minio << EOL
-        MINIO_VOLUMES=$MINIO_VOL_STR
+        MINIO_VOLUMES="$MINIO_VOL_STR"
         MINIO_OPTS="--console-address :9001"
         MINIO_ROOT_USER=minioadmin
         MINIO_ROOT_PASSWORD=Equinixmetal05
@@ -590,9 +624,8 @@ write_files:
         systemctl daemon-reload
         sleep 1
         if [[ "$MRESTART" == "yes" ]]; then
-            POST_UPDATE_TS=$(($UPDATE_TS + 45))
-            systemctl enable minio.service
-            systemd-run --on-calendar "$(date -d @"$UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl restart minio
+            DELAYED_START_TS=$(($START_TS + 5))
+            systemd-run --on-calendar "$(date -d @"$DELAYED_START_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl enable --now minio
             systemd-run --on-calendar "$(date -d @"$POST_UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us mc --insecure alias set object_private https://127.0.0.1:9000 minioadmin Equinixmetal05
             systemd-run --on-calendar "$(date -d @"$POST_UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl enable --now minio_updater.timer
             mkdir -p /var/tmp/metal/tmp/
