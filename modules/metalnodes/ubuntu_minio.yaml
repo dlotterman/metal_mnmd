@@ -157,7 +157,6 @@ write_files:
       NUM_INSTANCES=1
       MGROUPS=$(grep MGROUP /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
       MINIO_VOL_STR=""
-      MGROUP1_2-2
       for MGROUP in $MGROUPS; do
         MGROUP_FIRST=$(echo $MGROUP | awk -F '-' '{print$1}')
         MGROUP_LAST=$(echo $MGROUP | awk -F '-' '{print$NF}')
@@ -224,12 +223,11 @@ write_files:
       rm /tmp/.metal_tag_extend.env > /dev/null 2>&1
       rm /tmp/.metadata_update > /dev/null 2>&1
       for TAG in $TAGS; do
-          if [[ "$TAG" =~ .*"MSUBNET".* ]]; then
-              bash /var/tmp/metal/bin/minio_network_mangle.sh
-              bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
-          elif [[ "$TAG" = "minio" ]]; then
+          if [[ "$TAG" = "minio" ]]; then
             if test ! -f /var/tmp/metal/bin/minio_install_mangle.done; then
               logger "starting minio install mangles"
+              bash /var/tmp/metal/bin/minio_network_mangle.sh
+              bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
               bash /var/tmp/metal/bin/minio_disk_mangle.sh
               bash /var/tmp/metal/bin/minio_install_mangle.sh
             fi
@@ -316,6 +314,12 @@ write_files:
                 let WAIT_COUNTER=WAIT_COUNTER+1
             fi
         done
+        wget --quiet https://dl.min.io/server/minio/release/linux-amd64/minio
+        wget --quiet https://dl.min.io/client/mc/release/linux-amd64/mc
+        chmod +x minio
+        chmod +x mc
+        mv minio /usr/local/bin/
+        mv mc /usr/local/bin/
         cat > /etc/default/minio << EOL
         MINIO_VOLUMES=$MINIO_VOL_STR
         MINIO_OPTS="--console-address :9001"

@@ -9,7 +9,7 @@ terraform {
     }
   }
   provider_meta "equinix" {
-    module_name = "equinix-metal-vrf/metalnodes"
+    module_name = "metal-mnmd/metalnodes"
   }
 }
 
@@ -19,16 +19,18 @@ variable "plan" {}
 variable "metro" {}
 variable "operating_system" {}
 variable "metal_vlan" {}
+variable "metal_nodes_tags" {}
 
 # create metal nodes
 resource "equinix_metal_device" "metal_nodes" {
   count            = var.node_count
-  hostname         = format("m-%d", count.index + 1)
+  hostname         = format("m-%d", count.index + 2)
   plan             = var.plan
   metro            = var.metro
   operating_system = var.operating_system
   billing_cycle    = "hourly"
   project_id       = var.project_id
+  tags			   = var.metal_nodes_tags
   user_data        = data.cloudinit_config.config[count.index].rendered
   depends_on       = [var.metal_vlan]
   behavior {allow_changes=["user_data"]}
@@ -40,7 +42,7 @@ data "cloudinit_config" "config" {
   base64_encode = false # not supported on Equinix Metal
 
   part {
-    content_type = "text/x-shellscript"
+    content_type = "text/cloud-config"
     content      = file("${path.module}/ubuntu_minio.yaml")
   }
 }
