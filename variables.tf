@@ -32,11 +32,6 @@ variable "d_node_vlans" {
   default = [249]
 }
 
-// variable "vlan_count" {
-  // type        = number
-  // description = "dense storage vlans"
-  // default     = 1
-// }
 variable "server_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
@@ -45,7 +40,7 @@ variable "server_count" {
 
 variable "metal_node_tags" {
   type    = list(string)
-  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.249","MMNMD_VLAN_249","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_FIREWALL_HOLE_172.91.1.54","MMNMD_UPDATE_1718489149"]
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.249","MMNMD_VLAN_249","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.247.0"]
 }
 
 variable "metal_asn" {
@@ -70,7 +65,7 @@ variable "object_private_d_node_subnet" {
 
 variable "c_node_tags" {
   type    = list(string)
-  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.248","MMNMD_VLAN_248","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.249.0","MMNMD_ADNS_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_FIREWALL_HOLE_172.91.1.54","MMNMD_UPDATE_1718495135"]
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.248","MMNMD_VLAN_248","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.249.0","MMNMD_ADNS_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE2_172.16.247.0"]
 }
 
 variable "object_private_c_node_subnet" {
@@ -88,11 +83,7 @@ variable "c_node_plan" {
   description = "Metal server type you plan to deploy"
   default     = "m3.large.x86"
 }
-// variable "c_node_vlan_count" {
-  // type        = number
-  // description = "dense storage vlans"
-  // default     = 1
-// }
+
 variable "c_node_vlans" {
   type    = set(string)
   default = [248]
@@ -102,7 +93,7 @@ variable "c_node_vlans" {
 
 variable "z_node_tags" {
   type    = list(string)
-  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.247","MMNMD_VLAN_247","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.249.0","MMNMD_ADNS2_172.16.249.2-172.16.249.3:249.private","MMNMD_FIREWALL_HOLE_172.91.1.54"]
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.247","MMNMD_VLAN_247","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.249.0","MMNMD_ADNS2_172.16.249.2-172.16.249.3:249.private"]
 }
 
 variable "object_private_z_node_subnet" {
@@ -113,7 +104,7 @@ variable "object_private_z_node_subnet" {
 variable "z_node_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
-  default     = 0
+  default     = 3
 }
 variable "z_node_vlans" {
   type    = set(string)
@@ -124,8 +115,3 @@ variable "z_node_plan" {
   description = "Metal server type you plan to deploy"
   default     = "c3.medium.x86"
 }
-// variable "z_node_vlan_count" {
-  // type        = number
-  // description = "dense storage vlans"
-  // default     = 1
-// }
