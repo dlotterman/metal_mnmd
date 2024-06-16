@@ -87,6 +87,8 @@ write_files:
     content: |
       logger "/opt/equinix/metal/bin/metal_mnmd_deploy.sh sourced / executed"
       mkdir -p /opt/equinix/metal/tmp/
+      mkdir -p /opt/equinix/metal/etc/
+      touch /opt/equinix/metal/etc/metal_tag_extend.env
       if test -f /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh; then
         source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
       fi
@@ -108,6 +110,7 @@ write_files:
       bash /opt/equinix/metal/bin/metal_disk_setup.sh
       bash /opt/equinix/metal/bin/metal_network_setup.sh
       bash /opt/equinix/metal/bin/metal_dnsmasq_manage.sh
+      bash /opt/equinix/metal/bin/metal_monitoring_mangle.sh
       bash /opt/equinix/metal/bin/minio_binary_mangle.sh
       bash /opt/equinix/metal/bin/minio_certs_manage.sh
       bash /opt/equinix/metal/bin/minio_etc_manage.sh
