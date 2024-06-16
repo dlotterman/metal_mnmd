@@ -1,40 +1,95 @@
-# Equinix Metal Virtual Routing and Forwarding (VRF) 
+# MinIO Multi-Node Multi-Drive with Equinix Metal
 
 [![Experimental](https://img.shields.io/badge/Stability-Experimental-red.svg)](https://github.com/equinix-labs/standards#about-uniform-standards)
 [![terraform](https://github.com/equinix-labs/terraform-equinix-metal-vrf/actions/workflows/integration.yaml/badge.svg)](https://github.com/equinix-labs/terraform-equinix-metal-vrf/actions/workflows/integration.yaml)
 
-# VRF deployment on Equinix Platform
+## Disclaimer
 
-Metal Virtual Routing & Forwarding (VRF) is a layer 3 networking service. It's implemented in Metal's networking devices (routers, switches etc) with built-in HA function. This Terraform script provides VRF deployments on Equinix Metal platform where a Metal Gateway, a VRF and a number of metal nodes are deployed. The metal VRF is connected to a pair of customer colo edge devices via a pair of redundant Virtual Connections (VC) created in a redundant dedicated fabric port (see high-level diagram below). The VRF is used to establish BGP sessions with colo network devices (or network edge devices) and advertise the specified network IPs to the devices.
+This repository is highly active with frequent breaking changes, do not base anything long lived of this repo as long as this disclaimer stands.
 
+# "Operationalized" MNMD with Metal
+```
+root@c-2:~# mc --insecure admin info object_private
+●  c-2.private:9000
+   Uptime: 38 minutes
+   Version: 2024-06-13T22:53:53Z
+   Network: 3/3 OK
+   Drives: 2/2 OK
+   Pool: 1
+
+●  c-3.private:9000
+   Uptime: 38 minutes
+   Version: 2024-06-13T22:53:53Z
+   Network: 3/3 OK
+   Drives: 2/2 OK
+   Pool: 1
+
+●  c-4.private:9000
+   Uptime: 38 minutes
+   Version: 2024-06-13T22:53:53Z
+   Network: 3/3 OK
+   Drives: 2/2 OK
+   Pool: 1
+
+┌──────┬──────────────────────┬─────────────────────┬──────────────┐
+│ Pool │ Drives Usage         │ Erasure stripe size │ Erasure sets │
+│ 1st  │ 1.9% (total: 10 TiB) │ 6                   │ 1            │
+└──────┴──────────────────────┴─────────────────────┴──────────────┘
+
+0 B Used, 5 Buckets, 0 Objects
+6 drives online, 0 drives offline, EC:3
+```
+```
+warp mixed --insecure --tls --host=c-{2...4}.248.private:9000 --warp-client=z-{2...4}.private --access-key= --secret-key= --duration 10m
+warp: Benchmark data written to "warp-remote-2024-06-16[000436]-N1Lj.csv.zst"
+Mixed operations.
+Operation: DELETE, 10%, Concurrency: 60, Ran 9m59s.
+ * Throughput: 170.61 obj/s
+
+Operation: GET, 45%, Concurrency: 60, Ran 9m59s.
+ * Throughput: 7676.16 MiB/s, 767.62 obj/s
+
+Operation: PUT, 15%, Concurrency: 60, Ran 9m59s.
+ * Throughput: 2558.81 MiB/s, 255.88 obj/s
+
+Operation: STAT, 30%, Concurrency: 60, Ran 9m59s.
+ * Throughput: 511.77 obj/s
+
+Cluster Total: 10234.84 MiB/s, 1705.87 obj/s over 10m0s.
+```
+```
+# bash /etc/cron.hourly/minio_schema_backup.sh
+mc: Bucket metadata successfully downloaded as object_private-bucket-metadata.zip
+mc: IAM info successfully downloaded as object_private-iam-info.zip
+root@c-2:~# ls -al /opt/equinix/metal/tmp/
+total 40
+drwxr-xr-x 3 root root 4096 Jun 16 00:22 .
+drwxr-xr-x 5 root root 4096 Jun 15 23:25 ..
+-rwxr-x--- 1 root root  251 Jun 16 00:22 1718497368_minio_defaults
+-rw-r--r-- 1 root root 3515 Jun 16 00:22 1718497368_object_private-bucket-metadata.zip
+-rw-r--r-- 1 root root 1630 Jun 16 00:22 1718497368_object_private-iam-info.zip
+```
+
+
+![](https://github.com/dlotterman/metal_mnmd/blob/dlott_initial3/docs/assets/minio.PNG)
+![](https://github.com/dlotterman/metal_mnmd/blob/dlott_initial3/docs/assets/node.PNG)
+
+This repository aims to be a tool for operators looking to get a quick evaluation of MinIO or Object Storage on Equinix Metal in an "Operationalized" way, where the intent of that is to broadly cover the scope of things needed to run an Object Stoage platform, based on MinIO, on Equinix Metal.
+
+That is not to say it is "Production Ready", but using this, an operator can jumptstart their understanding of running object storage at scale, with things like failure recovery, monitoring, schema backups and such toil in mind.
+
+Read before getting started:
+- [Tag based operations with Equinix Metal]()
+- [Using cloud-init to "appliance-afy" MinIO]()
+- [Networking with metal_mnmd]()
+At the core of this tool is an idea to use
 ![Metal-VRF-Github-0928-2023](https://github.com/equinix-labs/terraform-equinix-metal-vrf/assets/46980377/f3f2718c-bb53-4744-b1f1-e5f4a0116017)
 
-This script assumes that you already have a pair of dedicated Metal fabric ports in your Metal organization. For information on setting up dedicated Metal fabric ports, please see the following Equinix Metal document - <https://deploy.equinix.com/developers/docs/metal/interconnections/dedicated-ports/>
 
-For information regarding Metal Gateway and VRF, please see the following Equinix Metal document - <https://metal.equinix.com/developers/docs/networking/metal-gateway/> <https://deploy.equinix.com/developers/docs/metal/interconnections/vrf/> <br />
-For the Layer-2 bonded mode, please see the following Equinix Metal document - <https://metal.equinix.com/developers/docs/layer2-networking/layer2-mode/#pure-layer-2-modes>
 
-For the Terraform resources used in this script, such as "equinix_metal_vrf" and other Equinix Metal resources, please see the terraform.io registry: <https://registry.terraform.io/providers/equinix/equinix/latest/docs/resources/equinix_metal_vrf>  
 
-The Metal Gateway and the Metal nodes shared a single VLAN, the VLAN is hardcoded using 192.168.100.0/24 for IP assignments with Metal Gateway being assigned with 192.168.100.1, the first metal node being assigned with 192.168.100.2, the second metal node being assigned with 192.168.100.3 etc.  
 
-In order to establish the BGP sessions, you'll need to setup redundant fabric virtual connections (VC) to your colo network devices and perform BGP configurations too.
-
-We recommend the following steps to be performed BEFORE runing this script:
-
-Step 1 - Plan your setup, including your BGP neighbor IPs, network IPs (to be advertised via BGP) for metal gateway and metal nodes, Metal VRF ASN (use private ASN space, such as 65100), your network ASN, UUID of your dedicated Metal fabric port (obtaining it from Metal's portal), Metal project where you plan to deploy the VRF and Metal nodes etc. <br />
-
-Step 2 - In Equinix Fabric portal (<https://fabric.equinix.com>), create a pair of redundant virtual connections (VC) using your dedicated fabric port to your colo network devices <br />
-
-Step 3 - Perform BGP setups on your colo network edge devices following the BGP plan in Step 1. Since this Terraform script by default will auto allocate two metal's metro VLANs (one is a pseudo VLAN becasue we're using layer 2 bonded mode,the other one is a taged (802.1Q) VLAN) , therefore if you need to setup the same taged metal VALN (VLAN1 in the diagram above) on your colo side, you'll have to do so after you run this script.
-
-Setp 4 - Setup the appropriate variable values in your terraform.tfvars file based on Step 1 <br />
-
-Step 5 - After you run this script successfully, first make sure BGP sessions are etablished between VRF and your colo switches, your colo switches and the metal servers can ping each other; then grab the Metal VLAN by login to one of the Metal nodes (via Metal server's out-of-band console) and perform server and VLAN setups on your colo side if needed <br />
-
-Please note, DO NOT manually setup virtual connections (VC) using your Metal's dedicated fabric port in Metal's portal. This script will setup the VCs and BGP sessions etc. on Metal side. <br />
-
-The following is the Terraform flow of this script:  
+The following is the Terraform flow of this script:
 
 1. Create metal nodes <br />
 2. Create a VLAN (or using an existing VLAN) <br />

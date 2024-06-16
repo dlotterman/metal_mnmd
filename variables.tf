@@ -1,10 +1,10 @@
-variable "auth_token" {
+variable "metal_auth_token" {
   type        = string
   description = "Your Equinix Metal API key (https://console.equinix.com/users/-/api-keys)"
   sensitive   = true
 }
 
-variable "project_id" {
+variable "metal_project_id" {
   type        = string
   description = "Your Equinix Metal project ID, where you want to deploy your nodes to"
 }
@@ -12,111 +12,120 @@ variable "project_id" {
 variable "plan" {
   type        = string
   description = "Metal server type you plan to deploy"
-  default     = "c3.small.x86"
+  default     = "c3.medium.x86"
 }
 
 variable "operating_system" {
   type        = string
   description = "OS you want to deploy"
-  default     = "ubuntu_20_04"
+  default     = "ubuntu_24_04"
 }
 
 variable "metro" {
   type        = string
   description = "Metal's Metro location you want to deploy your servers to"
-  default     = "ny"
+  default     = "sv"
 }
 
+variable "d_node_vlans" {
+  type    = set(string)
+  default = [249]
+}
+
+// variable "vlan_count" {
+  // type        = number
+  // description = "dense storage vlans"
+  // default     = 1
+// }
 variable "server_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
-  default     = 1
+  default     = 3
 }
 
-variable "vlan_count" {
-  type        = number
-  description = "Metal's Metro VLAN"
-  default     = 1
+variable "metal_node_tags" {
+  type    = list(string)
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.249","MMNMD_VLAN_249","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_FIREWALL_HOLE_172.91.1.54","MMNMD_UPDATE_1718489149"]
 }
 
 variable "metal_asn" {
   type        = number
   description = "Metal's local ASN"
-  default     = 65100
-}
-
-variable "customer_asn" {
-  type        = number
-  description = "Metal customer's ASN peering with Metal"
-  default     = 100
-}
-
-variable "bgp_peer_subnet_pri" {
-  type        = string
-  description = "Primary BGP peering subnet"
-  default     = "169.254.100.0/30"
-}
-
-variable "bgp_peer_subnet_sec" {
-  type        = string
-  description = "Secondary BGP peering subnet"
-  default     = "169.254.100.8/30"
-}
-
-variable "metal_bgp_ip_pri" {
-  type        = string
-  description = "Metal's Primary local BGP IP peering with customer's BGP IP"
-  default     = "169.254.100.1"
-}
-
-variable "metal_bgp_ip_sec" {
-  type        = string
-  description = "Metal's Secondary local BGP IP peering with customer's BGP IP"
-  default     = "169.254.100.9"
-}
-
-variable "customer_bgp_ip_pri" {
-  type        = string
-  description = "Customer's BGP IP Peering with metal's Primary BGP IP"
-  default     = "169.254.100.2"
-}
-
-variable "customer_bgp_ip_sec" {
-  type        = string
-  description = "Customer's BGP IP Peering with metal's Secondary BGP IP"
-  default     = "169.254.100.10"
-}
-variable "gateway_count" {
-  type        = number
-  description = "number of Metal Gateway"
-  default     = 1
-}
-
-variable "dedicated_port_id" {
-  type        = string
-  description = "Your Metal's dedicated fabric port's UUID. You can retrieve the UUID from Metal's portal"
-  default     = "123456789"
-}
-
-variable "nni_vlan" {
-  type        = number
-  description = "Your fabric virtual circuit's NNI VLAN connecting to your VRF"
-  default     = 999
+  default     = 65414
 }
 
 variable "ip_ranges" {
   type        = list(any)
   description = "Your reserved IP ranges"
+  default = ["172.16.0.0/12"]
 }
 
-variable "bgp_md5_pri" {
+variable "object_private_d_node_subnet" {
   type        = string
-  description = "BGP password of primary connection"
-  default     = null
+  description = "OS you want to deploy"
+  default     = "172.16.249.0"
 }
 
-variable "bgp_md5_sec" {
-  type        = string
-  description = "BGP password of secondary connection"
-  default     = null
+#############
+
+variable "c_node_tags" {
+  type    = list(string)
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.248","MMNMD_VLAN_248","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.249.0","MMNMD_ADNS_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_FIREWALL_HOLE_172.91.1.54","MMNMD_UPDATE_1718495135"]
 }
+
+variable "object_private_c_node_subnet" {
+  type        = string
+  description = "OS you want to deploy"
+  default     = "172.16.248.0"
+}
+variable "c_node_count" {
+  type        = number
+  description = "numbers of backend nodes you want to deploy"
+  default     = 3
+}
+variable "c_node_plan" {
+  type        = string
+  description = "Metal server type you plan to deploy"
+  default     = "m3.large.x86"
+}
+// variable "c_node_vlan_count" {
+  // type        = number
+  // description = "dense storage vlans"
+  // default     = 1
+// }
+variable "c_node_vlans" {
+  type    = set(string)
+  default = [248]
+}
+
+#############
+
+variable "z_node_tags" {
+  type    = list(string)
+  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.247","MMNMD_VLAN_247","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.249.0","MMNMD_ADNS2_172.16.249.2-172.16.249.3:249.private","MMNMD_FIREWALL_HOLE_172.91.1.54"]
+}
+
+variable "object_private_z_node_subnet" {
+  type        = string
+  description = "OS you want to deploy"
+  default     = "172.16.247.0"
+}
+variable "z_node_count" {
+  type        = number
+  description = "numbers of backend nodes you want to deploy"
+  default     = 0
+}
+variable "z_node_vlans" {
+  type    = set(string)
+  default = [247]
+}
+variable "z_node_plan" {
+  type        = string
+  description = "Metal server type you plan to deploy"
+  default     = "c3.medium.x86"
+}
+// variable "z_node_vlan_count" {
+  // type        = number
+  // description = "dense storage vlans"
+  // default     = 1
+// }

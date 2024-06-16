@@ -1,0 +1,650 @@
+#cloud-config
+package_upgrade: true
+package_reboot_if_required: true
+datasource:
+  Ec2:
+    apply_full_imds_network_config: false
+    strict_id: false
+ssh:
+  emit_keys_to_console: false
+no_ssh_fingerprints: false
+
+groups:
+  - cloud-users
+  - minio-user
+
+users:
+  - name: minio-user
+    primary_group: minio-user
+    shell: /bin/bash
+    groups:
+      - cloud-users
+  - name: adminuser
+    primary_group: cloud-users
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups:
+      - sudo
+
+packages:
+  - smartmontools
+  - xfsprogs
+  - dnsmasq
+  - prometheus-node-exporter
+  - prometheus
+  - git
+  - update-notifier-common
+
+runcmd:
+  - [systemctl, enable, --now, ufw]
+  - [systemctl, enable, --now, unattended-upgrades]
+  - [ufw, default, allow, outgoing]
+  - [ufw, default, deny, incoming]
+  - [ufw, allow, from, 10.0.0.0/8, to, any]
+  - [ufw, allow, ssh]
+  - [ufw, limit, ssh]
+  - [ufw, enable]
+  - [modprobe, 8021q]
+  - [rsync, -av, "/root/.ssh", /home/adminuser/]
+  - [chown, -R, "adminuser:cloud-users", "/home/adminuser/"]
+  - [sed, -i, -e, '/^#MaxAuthTries/s/^.*$/MaxAuthTries 5/', /etc/ssh/sshd_config]
+  - [sed, -i, -e, '/^X11Forwarding/s/^.*$/X11Forwarding no/', /etc/ssh/sshd_config]
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, metal_tag_extend.timer]
+  - [systemctl, disable, --now, ssh]
+  - [systemctl, enable, --now, ssh]
+  - [bash, /usr/lib/apt/apt.systemd.daily]
+  - [systemctl, reset-failed]
+
+writefiles:
+  - owner: root:root
+    path: /etc/apt/apt.conf.d/50unattended-upgrades
+    content: |
+      Unattended-Upgrade::Allowed-Origins {
+      "${distro_id}:${distro_codename}";
+      "${distro_id}:${distro_codename}-updates";
+      "${distro_id}:${distro_codename}-security";
+      "${distro_id}ESMApps:${distro_codename}-apps-security";
+      "${distro_id}ESM:${distro_codename}-infra-security";
+      };
+    permissions: '0644'
+
+  - owner: root:root
+    path: /etc/apt/apt.conf.d/21auto-upgrades_on
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Download-Upgradeable-Packages "1";
+      APT::Periodic::AutocleanInterval "7";
+      APT::Periodic::Unattended-Upgrade "1";
+    permissions: '0644'
+  - owner: root:root
+    path: /etc/crontab
+    append: true
+    content: |
+      05 * * * * root /usr/bin/unattended-upgrade -v
+      05 11 * * * root systemctl restart sshd
+      15 11 * * * root systemctl restart serial-getty@ttyS1.service
+      20 11 * * * root systemctl restart getty@tty1.service
+    permissions: '0644'
+
+  - path: "/etc/modules-load.d/8021q.conf"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      8021q
+
+  - path: "/etc/smartd.conf"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      DEVICESCAN -d auto -n standby -m <nomailer> -M exec /usr/share/smartmontools/smartd-runner
+
+  - path: "/etc/default/smartmontools"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      start_smartd=yes
+
+  - path: "/etc/ssh/sshd_config"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      PermitRootLogin no
+
+
+  - path: "/opt/equinix/metal/bin/equinix_metal_mnmd_deploy.sh"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      logger "/opt/equinix/metal/bin/metal_mnmd_deploy.sh sourced / executed"
+      mkdir -p /opt/equinix/.tmp/
+      if test -f /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh; then
+        source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
+      fi
+      mkdir -p /opt/equinix/metal/tmp
+      if [ -n "$MMNMD_BRANCH" ]; then
+        git clone https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      else
+        git clone -b $MMNMD_BRANCH https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      fi
+      rsync /opt/equinix/metal/tmp/metal_mnmd/bin/* /opt/equinix/metal/bin/
+
+  - path: "/var/tmp/metal/bin/sharedlib.sh"
+    permissions: "0644"
+    owner: "root:root"
+    append: true
+    content: |
+      logger "sharedlib sourced / executed"
+      mkdir -p /var/tmp/metal/tmp/
+      SYSTEM_DRIVE_COUNT=$(lsblk | grep disk | awk '{print$1}' | wc -l)
+      if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
+        for S_DRIVE in $SYSTEM_DRIVE_COUNT; do
+            MOUNTS=$(cat /proc/mounts)
+            if [[ "$MOUNTS" =~ "$S_DRIVE" ]]; then
+                false
+            else
+                MINIO_DRIVES="/dev/"$S_DRIVE
+            fi
+        done
+      else
+        DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
+        MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
+      fi
+      NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
+      NUM_INTERFACES=$(ip link list up | grep SLAVE | grep BROADCAST | wc -l)
+      if [[ "$NUM_INTERFACES" == 4 ]]; then
+        BOND="bond1"
+      else
+        BOND="bond0"
+      fi
+      MINIO_SUBNET=$(grep MSUBNET_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
+      MINIO_VLAN=$(grep MVLAN_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
+      MINIO_GW=$(grep MVGW_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
+      if test -z "$MINIO_GW"; then
+          MINIO_GW="$MINIO_SUBNET.1"
+      fi
+      MINIO_INSTANCE=$(hostname | awk -F '-' '{print$NF}')
+      MINIO_ROUTES=$(grep MROUTES /var/tmp/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
+      NUM_INSTANCES=0
+      MGROUPS=$(grep MGROUP /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      MINIO_VOL_STR=""
+      for MGROUP in $MGROUPS; do
+        MGROUP_FIRST=$(echo $MGROUP | awk -F '-' '{print$1}')
+        MGROUP_LAST=$(echo $MGROUP | awk -F '-' '{print$NF}')
+        MGROUP_VOL_STR="https://m-{$MGROUP_FIRST...$MGROUP_LAST}.0.private:9000/mnt/disk{1...$NUM_DRIVES}/minio"
+        NUM_IN_GROUP=$((MGROUP_LAST-MGROUP_FIRST+1))
+        MINIO_VOL_STR="${MINIO_VOL_STR} $MGROUP_VOL_STR"
+        NUM_INSTANCES=$((NUM_INSTANCES+NUM_IN_GROUP+1))
+      done
+      MRESTART=$(grep MRESTART_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      MREBALANCE=$(grep MREBALANCE_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      MDECOM=$(grep MDECOM_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      CURRENT_TS=$(date +%s)
+      FUTURE_TS=$(($CURRENT_TS + 1200))
+      UPDATE_TS=$(grep MUPDATE_ /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      START_TS=$(($UPDATE_TS + 2))
+      POST_UPDATE_TS=$(($UPDATE_TS + 45))
+      ANETWORKS=$(grep ANETWORK /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+      AROUTES=$(grep AROUTE /var/tmp/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+
+  - path: /etc/systemd/system/metal_tag_extend.service
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=metal_tag_extend
+      After=multi-user.target
+      [Service]
+      Type=idle
+      ExecStart=/bin/bash /var/tmp/metal/bin/metal_tag_extend.sh
+      [Install]
+      WantedBy=timers.target
+
+  - path: /etc/systemd/system/metal_tag_extend.timer
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=run every 1 minute 30 seconds metal_tag_extend
+      [Timer]
+      OnBootSec=90sec
+      OnUnitActiveSec=90sec
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+  - path: /var/tmp/metal/bin/metal_tag_extend.sh
+    owner: root:root
+    append: false
+    content: |
+      #!/bin/bash
+      logger "starting /var/tmp/metal/bin/metal_tag_extend.sh"
+      if curl http://metadata.platformequinix.com &> /dev/null; then
+        true
+      else
+        logger "could not reach / resolve metadata, exiting1"
+        exit 1
+      fi
+      curl -s https://metadata.platformequinix.com/metadata -o /tmp/.metadata_update
+      rm /tmp/.metal_tag_extend.env > /dev/null 2>&1
+      touch /tmp/.metal_tag_extend.env
+      TAGS=$(jq -r '.tags[]' /tmp/.metadata_update)
+      for TAG in $TAGS; do
+          echo "export TAG_"${TAG}"" >> /tmp/.metal_tag_extend.env
+      done
+      mkdir -p /var/tmp/metal/etc/
+      mv /tmp/.metal_tag_extend.env /var/tmp/metal/etc/metal_tag_extend.env > /dev/null 2>&1
+      rm /tmp/.metal_tag_extend.env > /dev/null 2>&1
+      rm /tmp/.metadata_update > /dev/null 2>&1
+      for TAG in $TAGS; do
+          if [[ "$TAG" = "minio" ]]; then
+            if test ! -f /var/tmp/metal/bin/minio_install_mangle.done; then
+              logger "starting minio install mangles"
+              bash /var/tmp/metal/bin/minio_network_mangle.sh
+              bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
+              bash /var/tmp/metal/bin/minio_disk_mangle.sh
+              bash /var/tmp/metal/bin/minio_install_mangle.sh
+            else
+              bash /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
+            fi
+
+          fi
+      done
+
+  - path: /etc/systemd/system/minio_updater.service
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=minio_updater
+      After=multi-user.target
+      [Service]
+      Type=idle
+      ExecStart=/bin/bash /var/tmp/metal/bin/minio_updater.sh
+      [Install]
+      WantedBy=timers.target
+
+  - path: /etc/systemd/system/minio_updater.timer
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=run every 1 minute 10 seconds minio_updater
+      [Timer]
+      OnBootSec=70sec
+      OnUnitActiveSec=70sec
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+  - path: /var/tmp/metal/bin/minio_updater.sh
+    owner: root:root
+    append: false
+    content: |
+        #!/bin/bash
+        logger "starting /var/tmp/metal/bin/minio_updater.sh"
+        source /var/tmp/metal/bin/sharedlib.sh
+        mkdir -p /var/tmp/metal/tmp/
+        touch /var/tmp/metal/tmp/updates.tombstone
+        if grep -Fxq "$UPDATE_TS" /var/tmp/metal/tmp/updates.tombstone; then
+            logger "update $UPDATE_TS found in tombstone, passing"
+            exit 0
+        elif [[ "$UPDATE_TS" -lt "$CURRENT_TS" ]]; then
+            logger "update TS missing or $UPDATE_TS for the past, passing"
+            exit 0
+        elif [[ "$UPDATE_TS" -lt "$FUTURE_TS" ]]; then
+            logger "update $UPDATE_TS within scheduling window, proceeding"
+        fi
+        MINIO_STATUS=$(mc --insecure admin info object_private | tail -1 | awk '{print$4}')
+        if [[ "$MINIO_STATUS" == 0 ]]; then
+            logger "cluster status OK, proceeding"
+            true
+        else
+            logger "cluster status NO OK, exiting 1"
+            exit 1
+        fi
+        mc --insecure admin cluster bucket export object_private
+        mv object_private-bucket-metadata.zip /var/tmp/tmp/$UPDATE_TS_object_private-bucket-metadata.zip
+        mc --insecure admin cluster iam export object_private
+        mv object_private-iam-info.zip /var/tmp/tmp/$UPDATE_TS_object_private-iam-info.zip
+        if [[ "$MREBALANCE" == "yes" ]]; then
+            logger "rebalancing"
+            mc --insecure admin rebalance start object_private
+            logger "minio rebalance started"
+            exit 0
+        fi
+        WAIT_COUNTER=1
+        echo $UPDATE_TS >> /var/tmp/metal/tmp/updates.tombstone
+        while [[ "$WAIT_COUNTER" -lt 60 ]]; do
+            UPGRADE_STATUS=$(mc --insecure admin update -y object_private --json | jq -r .status)
+            sleep 3
+            if [[ "$UPGRADE_STATUS" == "success" ]]; then
+                logger "cluster upgraded, proceeding"
+                true
+                break
+            elif [[ "$WAIT_COUNTER" -gt 58 ]]; then
+                logger "cluster upgrade taking longer than 58 minutes, giving up"
+                exit 1
+            else
+                logger "waiting on cluster upgrade"
+                sleep 60
+                let WAIT_COUNTER=WAIT_COUNTER+1
+            fi
+        done
+        wget --quiet https://dl.min.io/server/minio/release/linux-amd64/minio
+        wget --quiet https://dl.min.io/client/mc/release/linux-amd64/mc
+        chmod +x minio
+        chmod +x mc
+        mv minio /usr/local/bin/
+        mv mc /usr/local/bin/
+        cp /etc/default/minio /var/tmp/metal/tmp/$UPDATE_TS_default_minio
+        cat > /etc/default/minio << EOL
+        MINIO_VOLUMES="$MINIO_VOL_STR"
+        MINIO_OPTS="--console-address :9001"
+        MINIO_ROOT_USER=minioadmin
+        MINIO_ROOT_PASSWORD=Equinixmetal05
+        MINIO_SERVER_URL="https://object.0.private:9000"
+        EOL
+        if [[ "$MRESTART" == "yes" ]]; then
+            systemd-run --on-calendar "$(date -d @"$UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl stop minio
+            systemd-run --on-calendar "$(date -d @"$START_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl start minio
+            logger "minio restart scheduled"
+        fi
+        if [[ "$MDECOM" == "yes" ]]; then
+            logger "decomming host"
+            mc --insecure admin decommission start object_private/ https://m-{$MINIO_INSTANCE}.0.private:9000/mnt/disk{1...$NUM_DRIVES}/minio
+        fi
+
+  - path: /etc/systemd/system/metal_updater.service
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=minio_updater
+      After=multi-user.target
+      [Service]
+      Type=idle
+      ExecStart=/bin/bash /var/tmp/metal/bin/minio_updater.sh
+      [Install]
+      WantedBy=timers.target
+
+  - path: /etc/systemd/system/metal_updater.timer
+    owner: root:root
+    append: false
+    content: |
+      [Unit]
+      Description=run every 1 minute 10 seconds minio_updater
+      [Timer]
+      OnBootSec=70sec
+      OnUnitActiveSec=70sec
+      Persistent=true
+      [Install]
+      WantedBy=timers.target
+
+  - path: /var/tmp/metal/bin/metal_updater.sh
+    owner: root:root
+    append: false
+    content: |
+        #!/bin/bash
+        logger "starting /var/tmp/metal/bin/metal_updater.sh"
+        source /var/tmp/metal/bin/sharedlib.sh
+        cp /var/tmp/metal/tmp/interfaces.orig /etc/network/interfaces
+        echo "" >> /etc/network/interfaces
+        echo "" >> /etc/network/interfaces
+        echo "auto $BOND.$MINIO_VLAN" >> /etc/network/interfaces
+        echo "iface $BOND.$MINIO_VLAN inet static" >> /etc/network/interfaces
+        echo "      address $MINIO_SUBNET.$MINIO_INSTANCE" >> /etc/network/interfaces
+        echo "      netmask 255.255.255.0" >> /etc/network/interfaces
+        for ROUTE in $MINIO_ROUTES; do
+            echo "      post-up route add -net $ROUTE gw $MINIO_GW" >> /etc/network/interfaces
+            echo "      post-down route del -net $ROUTE gw $MINIO_GW" >> /etc/network/interfaces
+            ufw allow from $ROUTE/24 to any port 9000
+            ufw allow from $ROUTE/24 to any port 53/tcp
+            ufw allow from $ROUTE/24 to any port 53/udp
+            ip route add $ROUTE/24 via $MINIO_GW
+        echo "" >> /etc/network/interfaces
+        echo "" >> /etc/network/interfaces
+        for ANETWORK in $ANETWORKS; do
+            ANETWORKVLAN=$(echo $ANETWORK | awk -F '-' '{print$1}')
+            ANETWORKSUBNET=$(echo $ANETWORK | awk -F '-' '{print$NF')
+            echo "auto $BOND.$ANETWORKVLAN" >> /etc/network/interfaces
+            echo "iface $BOND.$MINIO_VLAN inet static" >> /etc/network/interfaces
+            echo "      address $ANETWORKSUBNET.$MINIO_INSTANCE" >> /etc/network/interfaces
+            echo "      netmask 255.255.255.0" >> /etc/network/interfaces
+            for AROUTE in $AROUTES; do
+                AROUTEVLAN=$(echo $AROUTE | awk -F '-' '{print$1}')
+                AROUTESUBNET=$(echo $AROUTE | awk -F '-' '{print$NF')
+                if [[ "$ANETWORKVLAN" == "$AROUTEVLAN" ]]; then
+                    echo "      post-up route add -net $AROUTESUBNET.0 gw $AROUTESUBNET.1" >> /etc/network/interfaces
+                    echo "      post-down route del -net $AROUTESUBNET.0 gw $AROUTESUBNET.1" >> /etc/network/interfaces
+                fi
+                ufw allow from $MINIO_SUBNET.0/24 to any port 9000
+                ufw allow from $MINIO_SUBNET.0/24 to any port 53/tcp
+                ufw allow from $MINIO_SUBNET.0/24 to any port 53/udp
+            done
+            ifup $BOND.$ANETWORKVLAN
+        done
+
+
+  - path: /var/tmp/metal/bin/minio_disk_mangle.sh
+    owner: root:root
+    append: false
+    content: |
+        if test ! -f /var/tmp/metal/bin/minio_disk_mangle.done; then
+                logger "running /var/tmp/metal/bin/minio_disk_mangle.sh"
+        else
+                logger "exiting /var/tmp/metal/bin/minio_disk_mangle.sh, lock exists"
+                exit 0
+        fi
+        source /var/tmp/metal/bin/sharedlib.sh
+        COUNTER=1
+        for DRIVE in $MINIO_DRIVES ; do
+                SHORT_NAME=$(echo $DRIVE | awk -F '/' '{print$NF}')
+                sgdisk --zap-all $DRIVE
+                mkfs.xfs -f $DRIVE
+                mkdir /mnt/disk$COUNTER
+                udevadm settle
+                sync
+                sleep 5
+                udevadm settle
+                sync
+                DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
+                cat > /etc/systemd/system/mnt-disk$COUNTER.mount << EOL
+        [Unit]
+        Description=minio-drive-$DRIVE_UUID
+        DefaultDependencies=no
+        Conflicts=umount.target
+        Before=local-fs.target umount.target
+        After=swap.target
+        [Mount]
+        What=/dev/disk/by-uuid/$DRIVE_UUID
+        Where=/mnt/disk$COUNTER
+        Type=xfs
+        Options=defaults
+        [Install]
+        WantedBy=multi-user.target
+        EOL
+        if [[ "$NUM_DRIVES" == "$COUNTER" ]]; then
+                true
+        else
+                let COUNTER=COUNTER+1
+        fi
+        done
+        sync
+        sleep 1
+        systemctl daemon-reload
+        COUNTER2=1
+        for DRIVE in $MINIO_DRIVES ; do
+                systemctl enable --now mnt-disk$COUNTER2.mount
+                chown minio-user:minio-user /mnt/disk$COUNTER2
+                let COUNTER2=COUNTER2+1
+        done
+        touch /var/tmp/metal/bin/minio_disk_mangle.done
+
+  - path: /var/tmp/metal/bin/minio_network_mangle.sh
+    owner: root:root
+    append: false
+    content: |
+        source /var/tmp/metal/bin/sharedlib.sh
+        if test ! -f /var/tmp/metal/bin/minio_network_mangle; then
+                logger "running /var/tmp/metal/bin/minio_network_mangle.sh"
+        else
+                logger "exiting /var/tmp/metal/bin/minio_network_mangle.sh, lock exists"
+                exit 0
+        fi
+        cp /etc/network/interfaces /var/tmp/metal/tmp/interfaces.orig
+        echo "" >> /etc/network/interfaces
+        echo "" >> /etc/network/interfaces
+        echo "auto $BOND.$MINIO_VLAN" >> /etc/network/interfaces
+        echo "iface $BOND.$MINIO_VLAN inet static" >> /etc/network/interfaces
+        echo "      address $MINIO_SUBNET.$MINIO_INSTANCE" >> /etc/network/interfaces
+        echo "      netmask 255.255.255.0" >> /etc/network/interfaces
+        for ROUTE in $MINIO_ROUTES; do
+            echo "      post-up route add -net $ROUTE gw $MINIO_GW" >> /etc/network/interfaces
+            echo "      post-down route del -net $ROUTE gw $MINIO_GW" >> /etc/network/interfaces
+            ufw allow from $ROUTE/16 to any port 9000
+            ufw allow from $ROUTE/16 to any port 53/tcp
+            ufw allow from $ROUTE/16 to any port 53/udp
+        done
+        ufw allow from $MINIO_SUBNET.0/24 to any port 9000
+        ufw allow from $MINIO_SUBNET.0/24 to any port 9001
+        ufw allow from $MINIO_SUBNET.0/24 to any port 53
+        ufw allow from $MINIO_SUBNET.0/24 to any port 9100
+        ifup $BOND.$MINIO_VLAN
+        touch /var/tmp/metal/bin/minio_network_mangle.done
+
+  - path: /var/tmp/metal/bin/metal_dnsmasq_mangle.sh
+    owner: root:root
+    append: false
+    content: |
+        logger "running /var/tmp/metal/bin/metal_dnsmasq_mangle.sh"
+        source /var/tmp/metal/bin/sharedlib.sh
+        mkdir -p /etc/dnsmasq.d/
+        cat > /etc/dnsmasq.conf << EOL
+        expand-hosts
+        domain-needed
+        bogus-priv
+        dns-forward-max=150
+        cache-size=19968
+        neg-ttl=60
+        no-poll
+        server=147.75.207.207
+        server=147.75.207.208
+        domain=0.private,$MINIO_SUBNET.0/24,local
+        synth-domain=0.private,$MINIO_SUBNET.0/24,m-*
+        local=/private/
+        interface=$BOND.$MINIO_VLAN
+        bind-interfaces
+        listen-address=127.0.0.1
+        listen-address=127.0.0.53
+        conf-dir=/etc/dnsmasq.d/
+        EOL
+        rm /etc/dnsmasq.d/minio.conf > /dev/null 2>&1
+        for i in $(seq 2 $NUM_INSTANCES); do
+                echo "host-record=object.0.private,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
+        done
+        systemctl disable --now systemd-resolved.service
+        sleep 1
+        systemctl enable --now dnsmasq.service
+        systemctl restart dnsmasq.service
+
+  - path: /var/tmp/metal/bin/minio_install_mangle.sh
+    owner: root:root
+    append: false
+    content: |
+        logger "running /var/tmp/metal/bin/minio_install_mangle.sh"
+        source /var/tmp/metal/bin/sharedlib.sh
+        wget --quiet http://ipxe.dlott.casa/util/minio
+        wget --quiet http://ipxe.dlott.casa/util/mc
+        chmod +x minio
+        chmod +x mc
+        mv minio /usr/local/bin/
+        mv mc /usr/local/bin/
+        mkdir -p /home/minio-user/.minio/certs
+        cat > /home/minio-user/.minio/certs/private.key << EOL
+        -----BEGIN PRIVATE KEY-----
+        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgLgSzXQp9uiCcuYi1
+        pDkPNwSFFpENu2TyDmbwXkmGQu6hRANCAAS2uclYtEYZ1FaFkih0z2VYJJmH/hVe
+        YH1NdzeAPf/XJM1+q6wdd1p7pO1L7fsXsg6opG0T8bBh6FIk5CVYeV53
+        -----END PRIVATE KEY-----
+        EOL
+        cat > /home/minio-user/.minio/certs/public.crt << EOL
+        -----BEGIN CERTIFICATE-----
+        MIICDDCCAbKgAwIBAgIQTpNNQyfJf7G6jtcR/F8EOjAKBggqhkjOPQQDAjA3MRww
+        GgYDVQQKExNDZXJ0Z2VuIERldmVsb3BtZW50MRcwFQYDVQQLDA5taW5pby11c2Vy
+        QG0tMjAeFw0yNDA2MDkwMDE4NTlaFw0yNTA2MDkwMDE4NTlaMDcxHDAaBgNVBAoT
+        E0NlcnRnZW4gRGV2ZWxvcG1lbnQxFzAVBgNVBAsMDm1pbmlvLXVzZXJAbS0yMFkw
+        EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtrnJWLRGGdRWhZIodM9lWCSZh/4VXmB9
+        TXc3gD3/1yTNfqusHXdae6TtS+37F7IOqKRtE/GwYehSJOQlWHled6OBnzCBnDAO
+        BgNVHQ8BAf8EBAMCAqQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUw
+        AwEB/zAdBgNVHQ4EFgQUR5eeush1hD4N5f0V3lH4gTEv7c8wRQYDVR0RBD4wPIIJ
+        bG9jYWxob3N0gg5vYmplY3QucHJpdmF0ZYIHcHJpdmF0ZYIJKi5wcml2YXRlggsq
+        LjAucHJpdmF0ZTAKBggqhkjOPQQDAgNIADBFAiBfX1vOG8uxz2amgyKz5qQQHdQX
+        Pw6dFvow6KUnW95JhAIhAPElt5kWjfSsBZp6uF009QUwR6386VQ+OMCupnB7Oo1f
+        -----END CERTIFICATE-----
+        EOL
+        chown -R minio-user /home/minio-user/.minio/certs
+        cat > /etc/default/minio << EOL
+        MINIO_VOLUMES="$MINIO_VOL_STR"
+        MINIO_OPTS="--console-address :9001"
+        MINIO_ROOT_USER=minioadmin
+        MINIO_ROOT_PASSWORD=Equinixmetal05
+        MINIO_SERVER_URL="https://object.0.private:9000"
+        EOL
+        chmod 0440 /etc/default/minio
+        chown "minio-user:cloud-users" /etc/default/minio
+        cat > /etc/systemd/system/minio.service << EOL
+        [Unit]
+        Description=MinIO
+        Documentation=https://min.io/docs/minio/linux/index.html
+        Wants=network-online.target
+        After=network-online.target
+        AssertFileIsExecutable=/usr/local/bin/minio
+        [Service]
+        WorkingDirectory=/usr/local
+        User=minio-user
+        Group=minio-user
+        ProtectProc=invisible
+        EnvironmentFile=-/etc/default/minio
+        ExecStartPre=/bin/bash -c "if [ -z \"\${MINIO_VOLUMES}\" ]; then echo \"Variable MINIO_VOLUMES not set in /etc/default/minio\"; exit 1; fi"
+        ExecStart=/usr/local/bin/minio server \$MINIO_OPTS \$MINIO_VOLUMES
+        Restart=always
+        LimitNOFILE=65536
+        TasksMax=infinity
+        TimeoutStopSec=infinity
+        SendSIGKILL=no
+        [Install]
+        WantedBy=multi-user.target
+        EOL
+        systemctl daemon-reload
+        sleep 1
+        if [[ "$MRESTART" == "yes" ]]; then
+            DELAYED_START_TS=$(($START_TS + 5))
+            systemd-run --on-calendar "$(date -d @"$DELAYED_START_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl enable --now minio
+            systemd-run --on-calendar "$(date -d @"$POST_UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us mc --insecure alias set object_private https://127.0.0.1:9000 minioadmin Equinixmetal05
+            systemd-run --on-calendar "$(date -d @"$POST_UPDATE_TS" +'%F %T')" --timer-property=AccuracySec=1us systemctl enable --now minio_updater.timer
+            mkdir -p /var/tmp/metal/tmp/
+            echo $UPDATE_TS >> /var/tmp/metal/tmp/updates.tombstone
+            logger "minio first restart scheduled"
+        else
+            systemctl enable --now minio
+            WAIT_COUNTER=1
+            while [[ "$WAIT_COUNTER" -lt 60 ]]; do
+                if curl --insecure -f "https://127.0.0.1:9000/minio/health/cluster/read"; then
+                    logger "local minio instance up"
+                    mc --insecure alias set object_private https://127.0.0.1:9000 minioadmin Equinixmetal05
+                    systemctl enable --now minio_updater.timer
+                    break
+                else
+                    logger "waiting on local instance"
+                    sleep 60
+                    let WAIT_COUNTER=WAIT_COUNTER+1
+                fi
+            done
+        fi
+        touch /var/tmp/metal/bin/minio_install_mangle.done
