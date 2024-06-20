@@ -60,4 +60,4 @@ done
 
 systemctl enable --now nginx
 systemctl restart nginx
-file
+fi
