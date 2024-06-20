@@ -13,7 +13,7 @@ for LBGROUP in $LBT_GROUPS; do
 	LBGROUP_HOSTNAME=$(echo $LBGROUP | awk -F ':' '{print$4}')
 	LBGROUP_PORT=$(echo $LBGROUP | awk -F ':' '{print$NF}')
     LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
-	cat > /etc/nginx/sites-enabled/$LBGROUP_NAME.conf << EOL
+	cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
    listen       $LBGROUP_PORT;
    listen  [::]:$LBGROUP_PORT;
@@ -42,14 +42,15 @@ server {
 
       proxy_pass https://object_private_$LBGROUP_PORT; # This uses the upstream directive definition to load balance
    }
+}
 upstream object_private_$LBGROUP_PORT {
    least_conn;
-}
-EOL
-done
 
-for i in $(seq 2 $LB_NUM_IN_GROUP); do
-	echo "server "$LBGROUP_FIRSTNAME""$i"."$LBGROUP_LASTNAME"" >> /etc/nginx/sites-available/$LBGROUP_NAME.conf
+EOL
+	for i in $(seq 2 $LBGROUP_LAST); do
+		echo "server "$LBGROUP_FIRSTNAME""$i"."$LBGROUP_LASTNAME":9000;" >> /etc/nginx/sites-enabled/$LBGROUP_PORT.conf
+	done
+	echo "  }" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 done
 fi
 systemctl enable --now nginx
