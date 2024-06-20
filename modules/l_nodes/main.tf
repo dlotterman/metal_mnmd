@@ -9,7 +9,7 @@ terraform {
     }
   }
   provider_meta "equinix" {
-    module_name = "metal-mnmd/z-nodes"
+    module_name = "metal-mnmd/l-nodes"
   }
 }
 
@@ -24,9 +24,9 @@ variable "metal_node_tags" {}
 ######
 
 # create metal nodes
-resource "equinix_metal_device" "z_nodes" {
+resource "equinix_metal_device" "l_nodes" {
   count            = var.node_count
-  hostname         = format("z-%d", count.index + 2)
+  hostname         = format("l-%d", count.index + 2)
   plan             = var.plan
   metro            = var.metro
   operating_system = var.operating_system
@@ -51,9 +51,9 @@ data "cloudinit_config" "config" {
 
 resource "equinix_metal_port" "port" {
   count = var.node_count
-  port_id  = [for p in equinix_metal_device.z_nodes[count.index].ports : p.id if p.name == "bond0"][0]
+  port_id  = [for p in equinix_metal_device.l_nodes[count.index].ports : p.id if p.name == "bond0"][0]
   layer2   = false
   bonded   = true
   vlan_ids = var.metal_vlan.*.id
-  depends_on = [equinix_metal_device.z_nodes]
+  depends_on = [equinix_metal_device.l_nodes]
 }

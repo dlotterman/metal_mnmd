@@ -33,6 +33,7 @@ packages:
   - software-properties-common
   - apt-transport-https
   - prometheus-alertmanager
+  - nginx-light
 
 runcmd:
   - [systemctl, enable, --now, ufw]
@@ -96,19 +97,18 @@ write_files:
         source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
       fi
       rm -rf /opt/equinix/metal/tmp/metal_mnmd &> /dev/null
-      #if [ -n "$MMNMD_BRANCH" ]; then
-        #git clone -b $MMNMD_BRANCH https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
-        git clone -b dlott_initial3 https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
-      #else
-      #  git clone https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
-      #fi
+      if [ -n "$MMNMD_BRANCH" ]; then
+        git clone -b $MMNMD_BRANCH https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      else
+       git clone https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
+      fi
       rsync -a /opt/equinix/metal/tmp/metal_mnmd/bin/* /opt/equinix/metal/bin/
       touch /opt/equinix/metal/etc/metal_tag_extend.env
       cp /opt/equinix/metal/tmp/metal_mnmd/etc/systemd/metal_tag_extend.timer /etc/systemd/system/
       cp /opt/equinix/metal/tmp/metal_mnmd/etc/systemd/metal_tag_extend.service /etc/systemd/system/
       systemctl daemon-reload
-      systemctl start metal_tag_extend.service
       systemctl enable --now metal_tag_extend.timer
+      systemctl start metal_tag_extend.service
       sleep 5
       bash /opt/equinix/metal/bin/metal_disk_setup.sh
       bash /opt/equinix/metal/bin/metal_network_setup.sh
@@ -117,3 +117,4 @@ write_files:
       bash /opt/equinix/metal/bin/minio_binary_mangle.sh
       bash /opt/equinix/metal/bin/minio_certs_manage.sh
       bash /opt/equinix/metal/bin/minio_etc_manage.sh
+      bash /opt/equinix/metal/bin/nginx_restart_manage.sh

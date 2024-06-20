@@ -67,3 +67,4 @@ for MGROUP in $MGROUPS; do
 	NUM_INSTANCES=$((NUM_INSTANCES+NUM_IN_GROUP+1))
 done
 SORTED_STR_VOL=$(echo $MINIO_VOL_STR | xargs -n1 | sort | xargs)
+MNMD_LBT_GROUPS=$(grep MMNMD_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')

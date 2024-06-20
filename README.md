@@ -102,9 +102,8 @@ That is not to say this repository is "Production Ready", but using this startin
 - [Recovering from a node failure]()
 - [Decommisioning a MinIO node from a cluster]()
 - [Setting up tiering between MinIO node types]()
+- [Setting up load balancing "l_node" tier]()
 - [Benchmarking with warp]()
 
 ## Outside documentation
 - [Minio Erasure Code Calculator]()
-
-

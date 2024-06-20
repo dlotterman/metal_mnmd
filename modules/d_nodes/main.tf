@@ -9,7 +9,7 @@ terraform {
     }
   }
   provider_meta "equinix" {
-    module_name = "metal-mnmd/metalnodes"
+    module_name = "metal-mnmd/d-nodes"
   }
 }
 
@@ -23,7 +23,7 @@ variable "metal_node_tags" {}
 
 
 # create metal nodes
-resource "equinix_metal_device" "metal_nodes" {
+resource "equinix_metal_device" "d_nodes" {
   count            = var.node_count
   hostname         = format("d-%d", count.index + 2)
   plan             = var.plan
@@ -44,16 +44,16 @@ data "cloudinit_config" "config" {
 
   part {
     content_type = "text/cloud-config"
-    content      = file("${path.module}/d_node.yaml")
+    content      = file("${path.module}/../../cloud_init/node.yaml")
   }
 }
 
 ## put metal nodes in layer2 bonded mode and attach metro vlan to the nodes
 resource "equinix_metal_port" "port" {
   count = var.node_count
-  port_id  = [for p in equinix_metal_device.metal_nodes[count.index].ports : p.id if p.name == "bond0"][0]
+  port_id  = [for p in equinix_metal_device.d_nodes[count.index].ports : p.id if p.name == "bond0"][0]
   layer2   = false
   bonded   = true
   vlan_ids = var.metal_vlan.*.id
-  depends_on = [equinix_metal_device.metal_nodes]
+  depends_on = [equinix_metal_device.d_nodes]
 }
