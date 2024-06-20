@@ -41,6 +41,10 @@ server {
       chunked_transfer_encoding off;
 
       proxy_pass https://object_private_$LBGROUP_PORT; # This uses the upstream directive definition to load balance
+	  proxy_ssl_certificate     /opt/equinix/metal/tmp/public.crt;
+	  proxy_ssl_certificate_key /opt/equinix/metal/tmp/private.key;
+	  proxy_ssl_verify       off;
+	  proxy_ssl_session_reuse on;
    }
 }
 upstream object_private_$LBGROUP_PORT {

@@ -7,16 +7,16 @@ if curl http://metadata.platformequinix.com &> /dev/null; then
     logger "could not reach / resolve metadata, exiting1"
     exit 1
 fi
-curl -s https://metadata.platformequinix.com/metadata -o /opt/equinix/tmp/.metadata_update
-rm /opt/equinix/tmp/.tmp_metal_tag_extend.env > /dev/null 2>&1
-touch /opt/equinix/tmp/.tmp_metal_tag_extend.env
-TAGS=$(jq -r '.tags[]' /opt/equinix/tmp/.metadata_update)
+curl -s https://metadata.platformequinix.com/metadata -o /opt/equinix/metal/tmp/.metadata_update
+rm /opt/equinix/metal/tmp/.tmp_metal_tag_extend.env > /dev/null 2>&1
+touch /opt/equinix/metal/tmp/.tmp_metal_tag_extend.envs
+TAGS=$(jq -r '.tags[]' /opt/equinix/metal/tmp/.metadata_update)
 for TAG in $TAGS; do
-    echo "export TAG_""${TAG}""" >> /opt/equinix/tmp/.tmp_metal_tag_extend.env
+    echo "export TAG_""${TAG}""" >> /opt/equinix/metal/tmp/.tmp_metal_tag_extend.env
 done
 mkdir -p /opt/equinix/metal/etc/
-mv /opt/equinix/tmp/.tmp_metal_tag_extend.env /opt/equinix/metal/etc/metal_tag_extend.env > /dev/null 2>&1
-rm /opt/equinix/tmp/.metadata_update > /dev/null 2>&1
+mv /opt/equinix/metal/tmp/.tmp_metal_tag_extend.env /opt/equinix/metal/etc/metal_tag_extend.env > /dev/null 2>&1
+rm /opt/equinix/metal/tmp/.metadata_update > /dev/null 2>&1
 for TAG in $TAGS; do
     if [[ "$TAG" =~ "MMNMD_UPDATE_" ]]; then
         logger "entering update context for $TAG"
