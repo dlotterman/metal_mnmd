@@ -67,7 +67,7 @@ variable "object_private_d_node_subnet" {
 
 variable "c_node_tags" {
   type    = list(string)
-  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.248","MMNMD_VLAN_248","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.249.0","MMNMD_ADNS_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_ROUTE3_172.16.246.0","MMNMD_ADNS3_172.16.246.2-172.16.246.3:246.private"]
+  default = ["MMNMD_SUBNET_172.16.248","MMNMD_VLAN_248","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.249.0","MMNMD_ADNS_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE2_172.16.247.0","MMNMD_ROUTE3_172.16.246.0","MMNMD_ADNS3_172.16.246.2-172.16.246.3:246.private"]
 }
 
 variable "object_private_c_node_subnet" {
@@ -78,7 +78,7 @@ variable "object_private_c_node_subnet" {
 variable "c_node_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
-  default     = 4
+  default     = 0
 }
 variable "c_node_plan" {
   type        = string
@@ -95,7 +95,7 @@ variable "c_node_vlans" {
 
 variable "z_node_tags" {
   type    = list(string)
-  default = ["MMNMD_BRANCH_dlott_initial3","MMNMD_SUBNET_172.16.247","MMNMD_VLAN_247","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.249.0","MMNMD_ADNS2_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE3_172.16.246.0","MMNMD_ADNS3_172.16.246.2-172.16.246.3:246.private"]
+  default = ["MMNMD_SUBNET_172.16.247","MMNMD_VLAN_247","MMNMD_GROUP1_2-4","MMNMD_ROUTE1_172.16.248.0","MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private","MMNMD_ROUTE2_172.16.249.0","MMNMD_ADNS2_172.16.249.2-172.16.249.3:249.private","MMNMD_ROUTE3_172.16.246.0","MMNMD_ADNS3_172.16.246.2-172.16.246.3:246.private"]
 }
 
 variable "object_private_z_node_subnet" {
@@ -133,7 +133,7 @@ variable "object_private_l_node_subnet" {
 variable "l_node_count" {
   type        = number
   description = "numbers of backend nodes you want to deploy"
-  default     = 2
+  default     = 0
 }
 variable "l_node_vlans" {
   type    = set(string)
