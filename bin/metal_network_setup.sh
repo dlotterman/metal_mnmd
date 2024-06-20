@@ -34,6 +34,7 @@ ip link set dev $BOND mtu 9000
 ip link set dev $BOND.$MINIO_VLAN mtu 9000
 
 for ANETWORK in $ANETWORKS; do
+    logger "adding $ANETWORK"
 	echo "" >> /etc/network/interfaces
 	echo "" >> /etc/network/interfaces
 	ANETWORKVLAN=$(echo $ANETWORK | awk -F '-' '{print$1}')
@@ -46,6 +47,7 @@ for ANETWORK in $ANETWORKS; do
 		AROUTEVLAN=$(echo $AROUTE | awk -F '-' '{print$1}')
 		AROUTESUBNET=$(echo $AROUTE | awk -F '-' '{print$NF')
 		if [[ "$ANETWORKVLAN" == "$AROUTEVLAN" ]]; then
+		    logger "adding $AROUTE"
 			echo "      post-up route add -net $AROUTESUBNET.0 gw $AROUTESUBNET.1" >> /etc/network/interfaces
 			echo "      post-down route del -net $AROUTESUBNET.0 gw $AROUTESUBNET.1" >> /etc/network/interfaces
 		fi
