@@ -1,6 +1,4 @@
 logger "starting /opt/equinix/metal/bin/metal_tag_extend.sh"
-mkdir -p /opt/equinix/tmp/
-mkdir -p /opt/equinix/etc
 touch /opt/equinix/metal/etc/metal_tag_extend.env
 touch /opt/equinix/metal/tmp/updates.tombstone
 if curl http://metadata.platformequinix.com &> /dev/null; then

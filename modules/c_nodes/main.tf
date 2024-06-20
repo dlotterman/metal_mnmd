@@ -45,7 +45,7 @@ data "cloudinit_config" "config" {
 
   part {
     content_type = "text/cloud-config"
-    content      = file("${path.module}/d_node.yaml")
+    content      = file("${path.module}/../../cloud_init/node.yaml")
   }
 }
 
