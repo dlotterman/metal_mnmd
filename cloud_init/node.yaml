@@ -102,6 +102,12 @@ write_files:
       else
        git clone https://github.com/dlotterman/metal_mnmd /opt/equinix/metal/tmp/metal_mnmd
       fi
+      if [ $? -eq 0 ]; then
+        true
+      else
+        logger "git clone failed, exiting 1"
+        exit 1
+      fi
       rsync -a /opt/equinix/metal/tmp/metal_mnmd/bin/* /opt/equinix/metal/bin/
       touch /opt/equinix/metal/etc/metal_tag_extend.env
       cp /opt/equinix/metal/tmp/metal_mnmd/etc/systemd/metal_tag_extend.timer /etc/systemd/system/

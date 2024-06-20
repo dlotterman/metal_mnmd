@@ -28,7 +28,7 @@ Scripts get executed in three places.
 ### Operational Tags
 
 
-- `MMNMD_BRANCH`: If present, this tag will instruct nodes to checkout a branched version of this repository instead of the `main` the is cloned by default during the "[deploy()". This is useful if say a bug fix or feature change needs to be tested before being committed to master.
+- `MMNMD_BRANCH_`: If present, this tag will instruct nodes to checkout a branched version of this repository instead of the `main` the is cloned by default during the "[deploy()". This is useful if say a bug fix or feature change needs to be tested before being committed to master. Cannot contain `_` or "underbars".
   - Optional: yes
   - Toggleable post deployment: Yes
   - Multiple allowed: No
@@ -89,5 +89,5 @@ While `MMNMD_SUBNET_` and `MMNMD_VLAN_` dictate the primary MinIO service VLAN a
 - `MMNMD_ADNS`: When present, will add an additional DNS server for the given domain to the list of `dnsmasq` upstreams. A tag of `MMNMD_ADNS1_172.16.248.2-172.16.248.3:248.private` will add two DNS servers, `172.16.248.2` and `172.16.248.3` as upstream servers for the name `248.private`. If added, an instance with this tag will send any DNS lookup for `248.private` to this server. Multiple of these tags can be specified and exist on an instance at the same time.
   - Optional: Yes
   - Toggleable post deployment: Yes
-  - Multiple allowed: Yes  
+  - Multiple allowed: Yes
   - Complete example: `MMNMD_ANETWORK1_3860_172.16.240`

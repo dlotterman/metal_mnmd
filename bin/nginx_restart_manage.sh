@@ -1,5 +1,3 @@
-#!/bin/bash
-
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
 logger "running /opt/equinix/metal/bin/sidekick_restart_manage.sh"
