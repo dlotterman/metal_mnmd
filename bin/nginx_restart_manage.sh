@@ -4,8 +4,8 @@ logger "running /opt/equinix/metal/bin/sidekick_restart_manage.sh"
 
 rm /etc/nginx/sites-enabled/*
 
-if [ -n "$MNMD_LBT_GROUPS" ]; then
-for LBGROUP in $MNMD_LBT_GROUPS; do
+if [ -n "$LBT_GROUPS" ]; then
+for LBGROUP in $LBT_GROUPS; do
     LBGROUP_FIRST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$1}')
     LBGROUP_LAST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$NF}')
 	LBGROUP_FIRSTNAME=$(echo $LBGROUP | awk -F ':' '{print$2}')
