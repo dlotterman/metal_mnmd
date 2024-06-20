@@ -76,7 +76,7 @@ drwxr-xr-x 5 root root 4096 Jun 15 23:25 ..
 -rw-r--r-- 1 root root 1630 Jun 16 00:22 1718497368_object_private-iam-info.zip
 ```
 
-![](https://github.com/dlotterman/metal_mnmd/blob/blob/dlott-woah4/docs/assets/vrfdiagram.png)
+![](https://github.com/dlotterman/metal_mnmd/blob/dlott-woah4/docs/assets/vrfdiagram.png?raw=true)
 
 This repository aims to be a "launchpad" for operators looking to get a quick evaluation of MinIO or Object Storage on Equinix Metal in an "Operationalized" way, where the intent of that is to broadly cover the scope of things needed to run an Object Stoage platform, based on MinIO, on Equinix Metal.
 
