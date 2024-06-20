@@ -2,18 +2,19 @@ source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
 logger "running /opt/equinix/metal/bin/sidekick_restart_manage.sh"
 
-rm /etc/nginx/sites-enabled/*
+
 
 if [ -n "$LBT_GROUPS" ]; then
-for LBGROUP in $LBT_GROUPS; do
-    LBGROUP_FIRST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$1}')
-    LBGROUP_LAST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$NF}')
-	LBGROUP_FIRSTNAME=$(echo $LBGROUP | awk -F ':' '{print$2}')
-	LBGROUP_LASTNAME=$(echo $LBGROUP | awk -F ':' '{print$3}')
-	LBGROUP_HOSTNAME=$(echo $LBGROUP | awk -F ':' '{print$4}')
-	LBGROUP_PORT=$(echo $LBGROUP | awk -F ':' '{print$NF}')
-    LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
-	cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
+    rm /etc/nginx/sites-enabled/*
+	for LBGROUP in $LBT_GROUPS; do
+		LBGROUP_FIRST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$1}')
+		LBGROUP_LAST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$NF}')
+		LBGROUP_FIRSTNAME=$(echo $LBGROUP | awk -F ':' '{print$2}')
+		LBGROUP_LASTNAME=$(echo $LBGROUP | awk -F ':' '{print$3}')
+		LBGROUP_HOSTNAME=$(echo $LBGROUP | awk -F ':' '{print$4}')
+		LBGROUP_PORT=$(echo $LBGROUP | awk -F ':' '{print$NF}')
+		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
+		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
    listen       $LBGROUP_PORT;
    listen  [::]:$LBGROUP_PORT;
@@ -56,6 +57,7 @@ EOL
 	done
 	echo "  }" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 done
-fi
+
 systemctl enable --now nginx
 systemctl restart nginx
+file
