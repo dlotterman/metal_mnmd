@@ -44,6 +44,8 @@ MINIO_VLAN=$(grep MMNMD_VLAN_ /opt/equinix/metal/etc/metal_tag_extend.env | awk 
 MINIO_GW=$(grep MMNMD_VGW_ /opt/equinix/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
 if test -z "$MINIO_GW"; then
   MINIO_GW="$MINIO_SUBNET.1"
+else
+  MINIO_GW="$MINIO_SUBNET"."$MINIO_GW"
 fi
 MINIO_INSTANCE=$(hostname | awk -F '-' '{print$NF}')
 HOST_TYPE=$(hostname | awk -F '-' '{print$1}')
