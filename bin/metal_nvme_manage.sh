@@ -13,11 +13,11 @@ for DRIVE in $NVME_DRIVES; do
 	CONTRLID=$(nvme id-ctrl $DRIVE | grep cntlid | awk '{print$NF}')
 	TOTAL_NAMESPACES=$(nvme id-ctrl /dev/nvme0 | grep nn | awk '{print$NF}')
 	if [[ "$TOTAL_NAMESPACES" == 0 ]]; then
-		logger "cannot operate on drives with no namespace"
+		logger "cannot operate on drives with no namespace support"
 		exit 0
 	fi
 	if test -z "$TOTAL_NAMESPACES"; then
-		logger "cannot operate on drives with no namespace"
+		logger "cannot operate on drives with no namespace support"
 		exit 0
 	fi
 	HALF_NAMESPACES=$(( $TOTAL_NAMESPACES / 2 ))

@@ -27,8 +27,12 @@ if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
         fi
     done
     NUM_DRIVES=2
+elif test -f  /opt/equinix/metal/tmp/metal_nvme_manage.lock; then
+    DRIVE_SIZE=$(lsblk --bytes | grep nvme | awk '{print$4}' | sort -nr | head -1)
+    MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
+    NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
 else
-    DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
+	DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
 fi
