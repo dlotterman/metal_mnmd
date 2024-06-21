@@ -116,6 +116,7 @@ write_files:
       systemctl enable --now metal_tag_extend.timer
       systemctl start metal_tag_extend.service
       sleep 5
+      bash /opt/equinix/metal/bin/metal_nvme_manage.sh
       bash /opt/equinix/metal/bin/metal_disk_setup.sh
       bash /opt/equinix/metal/bin/metal_network_setup.sh
       bash /opt/equinix/metal/bin/metal_dnsmasq_manage.sh
