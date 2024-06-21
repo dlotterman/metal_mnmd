@@ -2,8 +2,6 @@ source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
 logger "running /opt/equinix/metal/bin/sidekick_restart_manage.sh"
 
-
-
 if [ -n "$LBT_GROUPS" ]; then
     rm /etc/nginx/sites-enabled/*
 	for LBGROUP in $LBT_GROUPS; do

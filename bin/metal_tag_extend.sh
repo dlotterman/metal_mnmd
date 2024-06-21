@@ -37,6 +37,7 @@ for TAG in $TAGS; do
         else
             logger "refreshing network"
             bash /opt/equinix/metal/bin/metal_mnmd_deploy.sh
+			echo "$TAG" >> /opt/equinix/metal/tmp/updates.tombstone
         fi
     fi
 done
