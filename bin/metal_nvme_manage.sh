@@ -9,6 +9,7 @@ fi
 
 # We grep out TB here for the systems that have 256GB boot NVMes
 NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}')
+logger "nvme drives: $NVME_DRIVES"
 for DRIVE in $NVME_DRIVES; do
 	logger "working on nvme $DRIVE"
 	CONTRLID=$(nvme id-ctrl $DRIVE | grep cntlid | awk '{print$NF}')
@@ -29,7 +30,7 @@ for DRIVE in $NVME_DRIVES; do
 		logger "drive $DRIVE to small to be a Metal data drive"
 		continue
 	fi
-	# Sigh, you can get varying features of NS
+	# Sigh, you can get varying features of NS from varying hard drives given to you by Metal
 	#HALF_NAMESPACES=$(( $TOTAL_NAMESPACES / 2 ))
 	# Magic numbering this
 	HALF_NAMESPACES=16

@@ -28,7 +28,10 @@ if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
     done
     NUM_DRIVES=2
 elif test -f  /opt/equinix/metal/tmp/metal_nvme_manage.lock; then
-    DRIVE_SIZE=$(lsblk --bytes | grep nvme | awk '{print$4}' | sort -nr | head -1)
+	# I dislike this, but when you split a 3.8TB NVMe by 16, it can
+	# be smaller than a potentially present small boot NVMe, making the boot NVMe larger
+	# meaning we can't just find the largest disk. So we find the one with the most number of being present
+    DRIVE_SIZE=$(lsblk --bytes | awk '{print$4}' | sort | uniq -c  | sort | tail -n1 | awk '{print$2}')
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
 else
