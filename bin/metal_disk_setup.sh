@@ -17,12 +17,16 @@ for DRIVE in $MINIO_DRIVES ; do
 		udevadm settle
 		sync
 		sleep 5
+		partprobe
+		sleep 5
 		DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
 		if test -z "$DRIVE_UUID"; then
+			logger "could find $SHORT_NAME, trying again"
 			sync
 			udevadm settle
+			partprobe
 			sleep 15
-			DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
+			DRIVE_UUID=$(blkid $DRIVE | awk '{print$2}' | awk -F "=" '{print$2}' | tr -d "\"")
 		fi
 		cat > /etc/systemd/system/mnt-disk$COUNTER.mount << EOL
 [Unit]
