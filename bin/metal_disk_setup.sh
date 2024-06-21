@@ -14,10 +14,16 @@ for DRIVE in $MINIO_DRIVES ; do
 		mkdir /mnt/disk$COUNTER
 		udevadm settle
 		sync
-		sleep 5
 		udevadm settle
 		sync
+		sleep 5
 		DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
+		if test -z "$DRIVE_UUID"; then
+			sync
+			udevadm settle
+			sleep 15
+			DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
+		fi
 		cat > /etc/systemd/system/mnt-disk$COUNTER.mount << EOL
 [Unit]
 Description=minio-drive-$DRIVE_UUID

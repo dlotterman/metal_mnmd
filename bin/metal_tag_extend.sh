@@ -30,7 +30,7 @@ for TAG in $TAGS; do
             echo "$TAG" >> /opt/equinix/metal/tmp/updates.tombstone
         fi
     elif [[ "$TAG" =~ "MMND_DEPLOY_" ]]; then
-        logger "entering deploy tag context"
+        logger "entering deploy tag context $TAG"
         if grep -Fxq "$TAG" /opt/equinix/metal/tmp/updates.tombstone; then
             logger "tag $TAG found in tombstone, passing"
             exit 0
