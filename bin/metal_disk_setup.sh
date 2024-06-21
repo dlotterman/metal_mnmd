@@ -14,11 +14,11 @@ for DRIVE in $MINIO_DRIVES ; do
 		mkdir /mnt/disk$COUNTER
 		udevadm settle
 		sync
+		sleep 2
+		partprobe
+		sleep 2
 		udevadm settle
 		sync
-		sleep 5
-		partprobe
-		sleep 5
 		DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
 		if test -z "$DRIVE_UUID"; then
 			logger "could find $SHORT_NAME, trying again"

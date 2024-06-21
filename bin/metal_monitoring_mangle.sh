@@ -89,3 +89,4 @@ systemctl stop grafana-server
 sleep 1
 systemctl enable --now prometheus
 systemctl enable --now grafana-server
+systemctl restart prometheus-node-exporter
