@@ -40,6 +40,9 @@ elif test -n "$HDD_ENABLED"; then
 elif [[ "$NUM_NVME_TYPES" == 1 ]]; then
 	logger "this host has one size of NVMe"
 	NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}')
+	DRIVE_SIZE=$(lsblk --bytes | grep nvme | awk '{print$4}' | sort -nr | head -1)
+    MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
+    NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
 # Else if we are an m3.large with 2x boot NVMe and 2x data NVMe
 elif [[ "$NUM_NVME_TYPES" == 2 ]]; then
 	# get NVMe drives where there is the most of a size
