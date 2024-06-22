@@ -1,7 +1,7 @@
 logger "runing /opt/equinix/metal/bin/metal_nvme_manage.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
-if test -z "$HDD_ENABLED"; then
+if test -n "$HDD_ENABLED"; then
 	logger "no need to manage nvme on a rotational instance"
 	touch /opt/equinix/metal/tmp/metal_nvme_manage.lock
 	exit 0
