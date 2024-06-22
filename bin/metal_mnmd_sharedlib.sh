@@ -31,7 +31,7 @@ if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
         fi
     done
     NUM_DRIVES=2
-elif test -z "$HDD_ENABLED"; then
+elif test -n "$HDD_ENABLED"; then
     logger "this host is has rotational drives"
 	DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
