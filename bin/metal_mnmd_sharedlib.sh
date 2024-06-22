@@ -47,6 +47,7 @@ elif [[ "$NUM_NVME_TYPES" == 1 ]]; then
 elif [[ "$NUM_NVME_TYPES" == 2 ]]; then
 	# get NVMe drives where there is the most of a size
 	logger "this host has two sizes of NVMe"
+	NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}' | grep -v nvme[0-1])
     DRIVE_SIZE=$(lsblk --bytes | awk '{print$4}' | sort | uniq -c  | sort | tail -n1 | awk '{print$2}')
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
