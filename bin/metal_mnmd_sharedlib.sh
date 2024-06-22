@@ -14,6 +14,10 @@ DELAYED_START_TS_P2=$(($DELAYED_START_TS + 2))
 
 WAIT_TIME=$(($DELAYED_START_TS_P2 - $CURRENT_TS + 10))
 
+HDD_ENABLED=$(lsblk -d -o rota | grep 1 | uniq)
+
+NUM_NVME_TYPES=$(for drive in $(nvme list-subsys | grep pci | awk '{print"/dev/"$2}'); do nvme id-ctrl $drive | grep tnvmcap | awk '{print$NF}' ; done | sort | uniq  | wc -l)
+
 SYSTEM_DRIVE_COUNT=$(lsblk | grep disk | awk '{print$1}' | wc -l)
 if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
     logger "using single disk config"
@@ -27,14 +31,25 @@ if [[ "$SYSTEM_DRIVE_COUNT" == 2 ]]; then
         fi
     done
     NUM_DRIVES=2
-elif test -f  /opt/equinix/metal/tmp/metal_nvme_manage.lock; then
-	# I dislike this, but when you split a 3.8TB NVMe by 16, it can
-	# be smaller than a potentially present small boot NVMe, making the boot NVMe larger
-	# meaning we can't just find the largest disk. So we find the one with the most number of being present
+elif test -z "$HDD_ENABLED"; then
+    logger "this host is has rotational drives"
+	DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
+    MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
+    NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
+# If we are an m3.large with 2x boot SSDs and 2x data NVMe
+elif [[ "$NUM_NVME_TYPES" == 1 ]]; then
+	logger "this host has one size of NVMe"
+	NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}')
+# Else if we are an m3.large with 2x boot NVMe and 2x data NVMe
+elif [[ "$NUM_NVME_TYPES" == 2 ]]; then
+	# get NVMe drives where there is the most of a size
+	logger "this host has two sizes of NVMe"
     DRIVE_SIZE=$(lsblk --bytes | awk '{print$4}' | sort | uniq -c  | sort | tail -n1 | awk '{print$2}')
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
-else
+# If we are a c3.medium with 4x ssds, no rotational and no HDD
+elif [[ "$NUM_NVME_TYPES" == 0 ]]; then
+	logger "this host has no rotational and no NVMe, likely just SSD"
 	DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)

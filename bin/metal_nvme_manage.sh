@@ -1,14 +1,17 @@
 logger "runing /opt/equinix/metal/bin/metal_nvme_manage.sh"
+source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
-if test ! -f  /opt/equinix/metal/tmp/metal_nvme_manage.lock; then
+if test -z "$HDD_ENABLED"; then
+	logger "no need to manage nvme on a rotational instance"
+	touch /opt/equinix/metal/tmp/metal_nvme_manage.lock
+	exit 0
+elif test ! -f  /opt/equinix/metal/tmp/metal_nvme_manage.lock; then
 		logger "setting up nvme"
 else
 		logger "exiting /opt/equinix/metal/bin/metal_nvme_manage.sh, lock exists, presumed OK"
 		exit 0
 fi
 
-# We grep out TB here for the systems that have 256GB boot NVMes
-NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}')
 logger "nvme drives: $NVME_DRIVES"
 for DRIVE in $NVME_DRIVES; do
 	logger "working on nvme $DRIVE"
