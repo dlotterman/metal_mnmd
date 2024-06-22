@@ -45,13 +45,14 @@ elif [[ "$NUM_NVME_TYPES" == 1 ]]; then
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
 # Else if we are an m3.large with 2x boot NVMe and 2x data NVMe
 elif [[ "$NUM_NVME_TYPES" == 2 ]]; then
-	# get NVMe drives where there is the most of a size
 	logger "this host has two sizes of NVMe"
+	# If we have two types, grep out the boot
 	NVME_DRIVES=$(nvme list-subsys | grep pci | awk '{print"/dev/"$2}' | grep -v nvme[0-1])
+	# get NVMe drives where there is the most of a size, because nvme_mange will have created namespaces
     DRIVE_SIZE=$(lsblk --bytes | awk '{print$4}' | sort | uniq -c  | sort | tail -n1 | awk '{print$2}')
     MINIO_DRIVES=$(lsblk --bytes | grep $DRIVE_SIZE | awk '{print"/dev/"$1}' | tr '\n' ' ')
     NUM_DRIVES=$(echo $MINIO_DRIVES | wc -w)
-# If we are a c3.medium with 4x ssds, no rotational and no HDD
+# If we are a c3.medium-alike with 4x ssds, no rotational and no HDD
 elif [[ "$NUM_NVME_TYPES" == 0 ]]; then
 	logger "this host has no rotational and no NVMe, likely just SSD"
 	DRIVE_SIZE=$(lsblk --bytes | grep disk | awk '{print$4}' | sort -nr | head -1)
