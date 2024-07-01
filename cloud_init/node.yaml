@@ -41,6 +41,7 @@ runcmd:
   - [ufw, default, allow, outgoing]
   - [ufw, default, deny, incoming]
   - [ufw, allow, from, 10.0.0.0/8, to, any]
+  - [ufw, allow, http]
   - [ufw, allow, ssh]
   - [ufw, limit, ssh]
   - [ufw, enable]

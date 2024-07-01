@@ -24,6 +24,7 @@ rm /etc/dnsmasq.d/minio.conf > /dev/null 2>&1
 for i in $(seq 2 $NUM_INSTANCES); do
 # .private is always inside the cluster, mostly for ssl cert reasons
 # the object/host-VLAN.privates are outside names
+	    echo "host-record=$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
 		echo "host-record=object.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
         echo "host-record=object-$MINIO_VLAN.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
         echo "host-record=object.$MINIO_VLAN.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf

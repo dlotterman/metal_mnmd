@@ -81,6 +81,14 @@ AROUTES=$(grep MMNMD_AROUTE /opt/equinix/metal/etc/metal_tag_extend.env | awk -F
 MINIO_ROUTES=$(grep MMNMD_ROUTE /opt/equinix/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
 MMNMD_FIREWALL_HOLE=$(grep MMNMD_FIREWALL_HOLE_ /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 ADNS=$(grep MMNMD_ADNS /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+MINIO_DOMAIN=$(grep MMNMD_DOMAIN /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+if test -z "$MINIO_DOMAIN"; then
+  MINIO_DOMAIN="private"
+  SERVER_DOMAIN="object.private"
+else
+  SERVER_DOMAIN=$MINIO_DOMAIN
+fi
+
 MINIO_INSTANCE=$(hostname | awk -F '-' '{print$NF}')
 NUM_INSTANCES=0
 MGROUPS=$(grep MMNMD_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
@@ -95,7 +103,3 @@ for MGROUP in $MGROUPS; do
 done
 SORTED_STR_VOL=$(echo $MINIO_VOL_STR | xargs -n1 | sort | xargs)
 LBT_GROUPS=$(grep MNMD_LBT_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
-MINIO_DOMAIN=$(grep MMNMD_DOMAIN /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
-if test -z "$MINIO_DOMAIN"; then
-  MINIO_DOMAIN="private"
-fi

@@ -6,7 +6,7 @@ MINIO_OPTS="--console-address :9001"
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=Equinixmetal05
 MINIO_PROMETHEUS_AUTH_TYPE="public"
-MINIO_SERVER_URL="https://object.private:9000"
+MINIO_SERVER_URL="https://$SERVER_DOMAIN:9000"
 MINIO_SCANNER_SPEED="fastest"
 EOL
 chmod 0750 /etc/default/minio

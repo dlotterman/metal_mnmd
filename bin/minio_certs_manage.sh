@@ -42,13 +42,16 @@ if [[ "$MINIO_DOMAIN" == "private" ]]; then
 	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
 
 else
-	certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp --agree-tos --register-unsafely-without-email
-
+	systemctl stop nginx
+	ufw allow http
+	certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp --agree-tos --register-unsafely-without-email --non-interactive
+	systemctl start nginx
+	ufw deny http
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
 
 	mkdir -p /opt/equinix/metal/tmp/export
-	echo "mmnmd export dir" > mkdir -p /opt/equinix/metal/tmp/export/index.html
+	echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/index.html
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
 
