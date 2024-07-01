@@ -21,43 +21,44 @@ if [[ "$MINIO_INSTANCE" != 2 ]]; then
 		sleep 5
 	done
 	mkdir -p /opt/equinix/metal/tmp/import
-	wget -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/private.key
-	wget -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/public.crt
-	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/export/private.key
-	cp /opt/equinix/metal/tmp/import/private.key /home/minio-user/.minio/certs/private.key
-	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/private.key
-	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/export/public.crt
-	cp /opt/equinix/metal/tmp/import/public.crt /home/minio-user/.minio/certs/public.crt
-	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/public.crt
+	wget -q -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/private.key
+	wget -q -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/public.crt
+	cp -f /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/export/private.key
+	cp -f /opt/equinix/metal/tmp/import/private.key /home/minio-user/.minio/certs/private.key
+	cp -f /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/private.key
+	cp -f /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/export/public.crt
+	cp -f /opt/equinix/metal/tmp/import/public.crt /home/minio-user/.minio/certs/public.crt
+	cp -f /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/public.crt
 	chown -R minio-user /home/minio-user/.minio/certs
 	touch /opt/equinix/metal/tmp/minio_certs_manage.lock
     exit 0
 fi
 
 if [[ "$MINIO_DOMAIN" == "private" ]]; then
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /home/minio-user/.minio/certs/private.key
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/private.key
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/export/private.key
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /home/minio-user/.minio/certs/public.crt
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/public.crt
-	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
+	# We keep fixed certs for easier wireshark / tcpdump
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /home/minio-user/.minio/certs/private.key
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/private.key
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/export/private.key
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /home/minio-user/.minio/certs/public.crt
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/public.crt
+	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
 
 else
 	systemctl stop nginx
 	ufw allow http
-	certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp --agree-tos --register-unsafely-without-email --non-interactive
+	certbot certonly --standalone -d '"$MINIO_DOMAIN",*."$MINIO_DOMAIN"' --staple-ocsp --agree-tos --register-unsafely-without-email --non-interactive
 	systemctl start nginx
 	ufw deny http
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
 
 	mkdir -p /opt/equinix/metal/tmp/export
 	echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/landing.html
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
 
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
-	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
+	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
 fi
 
 
