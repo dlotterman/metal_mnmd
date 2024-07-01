@@ -57,7 +57,8 @@ EOL
 	done
 	echo "  }" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 done
-
+fi
+		logger "nginx_restart_manage: writing /etc/nginx/sites-enabled/export.conf"
 		cat > /etc/nginx/sites-enabled/export.conf << EOL
 server {
    listen       9981;
@@ -74,5 +75,5 @@ EOL
 
 systemctl enable --now nginx
 systemctl restart nginx
-fi
+
 logger "nginx_restart_manage: done"

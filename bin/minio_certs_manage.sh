@@ -1,4 +1,5 @@
 logger "minio_certs_manage: running /opt/equinix/metal/bin/minio_certs_manage.sh"
+# todo: storing certs in three places is dumb
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
 if ! grep -q "MMNMD_GROUP" /opt/equinix/metal/etc/metal_tag_extend.env; then
@@ -23,22 +24,40 @@ if [[ "$MINIO_INSTANCE" != 2 ]]; then
 	wget -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/export/public.crt
 	mkdir -p /home/minio-user/.minio/certs
 	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/export/private.key
+	cp /opt/equinix/metal/tmp/import/private.key /home/minio-user/.minio/certs/private.key
+	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/private.key
 	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/export/public.crt
+	cp /opt/equinix/metal/tmp/import/public.crt /home/minio-user/.minio/certs/public.crt
+	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/public.crt
 	chown -R minio-user /home/minio-user/.minio/certs
 	touch /opt/equinix/metal/tmp/minio_certs_manage.lock
 fi
 
-certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp -m ssl@$MINIO_DOMAIN --agree-tos
-
 mkdir -p /home/minio-user/.minio/certs
 
-cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
-cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+if [[ "$MINIO_DOMAIN" == "private" ]]; then
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /home/minio-user/.minio/certs/private.key
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/private.key
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /opt/equinix/metal/tmp/export/private.key
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /home/minio-user/.minio/certs/public.crt
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/public.crt
+	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
 
-mkdir -p /opt/equinix/metal/tmp/export
-echo "mmnmd export dir" > mkdir -p /opt/equinix/metal/tmp/export/index.html
-cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem mkdir -p /opt/equinix/metal/tmp/export/private.key
-cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem mkdir -p /opt/equinix/metal/tmp/export/public.crt
+else
+	certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp --agree-tos --register-unsafely-without-email
+
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+
+	mkdir -p /opt/equinix/metal/tmp/export
+	echo "mmnmd export dir" > mkdir -p /opt/equinix/metal/tmp/export/index.html
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
+
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
+	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
+fi
+
 
 chown -R minio-user /home/minio-user/.minio/certs
 touch /opt/equinix/metal/tmp/minio_certs_manage.lock
