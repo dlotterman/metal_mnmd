@@ -1,6 +1,6 @@
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
-logger "running /opt/equinix/metal/bin/sidekick_restart_manage.sh"
+logger "running /opt/equinix/metal/bin/nginx_restart_manage.sh"
 
 if [ -n "$LBT_GROUPS" ]; then
     rm /etc/nginx/sites-enabled/*
@@ -75,3 +75,4 @@ EOL
 systemctl enable --now nginx
 systemctl restart nginx
 fi
+logger "nginx_restart_manage: done"

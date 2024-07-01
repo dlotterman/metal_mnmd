@@ -1,19 +1,19 @@
-logger "running /opt/equinix/metal/bin/minio_certs_manage.sh"
+logger "minio_certs_manage: running /opt/equinix/metal/bin/minio_certs_manage.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
-if ! grep -Fxq "MMNMD_GROUP" /opt/equinix/metal/etc/metal_tag_extend.env; then
-	logger "dont see group tag applied, waiting"
+if ! grep -q "MMNMD_GROUP" /opt/equinix/metal/etc/metal_tag_extend.env; then
+	logger "dont see group tag applied, exiting / waiting "
 	exit 0
 fi
 
 if test -f /opt/equinix/metal/tmp/minio_certs_manage.lock; then
-		logger "certs lock exists, exiting"
+		logger "minio_certs_manage: certs lock exists, exiting"
 		exit 0
 else
 		true
 fi
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
-    logger "waiting for first instance to open certs / nginx"
+    logger "minio_certs_manage: waiting for first instance to open certs / nginx"
 	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981; do
 		printf logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
 		sleep 5
@@ -42,3 +42,4 @@ cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem mkdir -p /opt/equinix/metal
 
 chown -R minio-user /home/minio-user/.minio/certs
 touch /opt/equinix/metal/tmp/minio_certs_manage.lock
+logger "minio_certs_manage: done"

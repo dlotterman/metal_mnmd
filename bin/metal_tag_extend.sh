@@ -41,3 +41,4 @@ for TAG in $TAGS; do
         fi
     fi
 done
+logger "metal_tag_extend: done"

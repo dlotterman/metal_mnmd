@@ -21,3 +21,4 @@ else
 	mv minio /usr/local/bin/
 	mv mc /usr/local/bin/
 fi
+logger "minio_binary_mangle: done"

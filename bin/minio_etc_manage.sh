@@ -17,3 +17,4 @@ systemctl daemon-reload
 systemctl stop warp.service
 systemctl enable --now warp.service
 sleep 1
+logger "minio_etc_default_manage: done"
