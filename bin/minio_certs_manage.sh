@@ -17,7 +17,7 @@ mkdir -p /home/minio-user/.minio/certs
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "minio_certs_manage: waiting for first instance to open certs / nginx"
 	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981; do
-		printf logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
+		logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
 		sleep 5
 	done
 	mkdir -p /opt/equinix/metal/tmp/import
@@ -31,6 +31,7 @@ if [[ "$MINIO_INSTANCE" != 2 ]]; then
 	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/public.crt
 	chown -R minio-user /home/minio-user/.minio/certs
 	touch /opt/equinix/metal/tmp/minio_certs_manage.lock
+    exit 0
 fi
 
 if [[ "$MINIO_DOMAIN" == "private" ]]; then
@@ -51,7 +52,7 @@ else
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
 
 	mkdir -p /opt/equinix/metal/tmp/export
-	echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/index.html
+	echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/landing.html
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
 	cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
 
@@ -61,5 +62,7 @@ fi
 
 
 chown -R minio-user /home/minio-user/.minio/certs
+chown -R www-data /opt/equinix/metal/tmp/export
+chmod -R 0755 /opt/equinix/metal/tmp/export
 touch /opt/equinix/metal/tmp/minio_certs_manage.lock
 logger "minio_certs_manage: done"

@@ -61,7 +61,7 @@ fi
 		logger "nginx_restart_manage: writing /etc/nginx/sites-enabled/export.conf"
 		cat > /etc/nginx/sites-enabled/export.conf << EOL
 server {
-   listen       9981;
+   listen       $MINIO_SUBNET.$MINIO_INSTANCE:9981;
    server_name  $HOST_TYPE-$MINIO_INSTANCE.$MINIO_DOMAIN;
    root 		/opt/equinix/metal/tmp/export/;
 

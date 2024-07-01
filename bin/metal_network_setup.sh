@@ -26,6 +26,7 @@ ifup $BOND.$MINIO_VLAN
 
 ufw allow from $MINIO_SUBNET.0/24 to any port 9000
 ufw allow from $MINIO_SUBNET.0/24 to any port 9001
+ufw allow from $MINIO_SUBNET.0/24 to any port 9981
 ufw allow from $MINIO_SUBNET.0/24 to any port 53
 ufw allow from $MINIO_SUBNET.0/24 to any port 9100
 ufw allow from $MINIO_SUBNET.0/24 to any port 7761
