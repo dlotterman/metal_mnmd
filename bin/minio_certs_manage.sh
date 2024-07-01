@@ -13,6 +13,7 @@ if test -f /opt/equinix/metal/tmp/minio_certs_manage.lock; then
 else
 		true
 fi
+mkdir -p /home/minio-user/.minio/certs
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "minio_certs_manage: waiting for first instance to open certs / nginx"
 	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981; do
@@ -20,9 +21,8 @@ if [[ "$MINIO_INSTANCE" != 2 ]]; then
 		sleep 5
 	done
 	mkdir -p /opt/equinix/metal/tmp/import
-	wget -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/export/private.key
-	wget -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/export/public.crt
-	mkdir -p /home/minio-user/.minio/certs
+	wget -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/private.key
+	wget -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/public.crt
 	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/export/private.key
 	cp /opt/equinix/metal/tmp/import/private.key /home/minio-user/.minio/certs/private.key
 	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/private.key
@@ -32,8 +32,6 @@ if [[ "$MINIO_INSTANCE" != 2 ]]; then
 	chown -R minio-user /home/minio-user/.minio/certs
 	touch /opt/equinix/metal/tmp/minio_certs_manage.lock
 fi
-
-mkdir -p /home/minio-user/.minio/certs
 
 if [[ "$MINIO_DOMAIN" == "private" ]]; then
 	cp /opt/equinix/metal/tmp/metal_mnmd/etc/certs/private.key /home/minio-user/.minio/certs/private.key

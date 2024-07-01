@@ -65,7 +65,7 @@ server {
    server_name  $HOST_TYPE-$MINIO_INSTANCE.$MINIO_DOMAIN;
    root 		/opt/equinix/metal/tmp/export/;
 
-   location /export {
+   location / {
    index index.html;
    autoindex on;
    }
