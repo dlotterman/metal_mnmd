@@ -16,7 +16,7 @@ fi
 mkdir -p /home/minio-user/.minio/certs
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "minio_certs_manage: waiting for first instance to open certs / nginx"
-	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981; do
+	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/certs.done; do
 		logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
 		sleep 5
 	done
@@ -44,21 +44,25 @@ if [[ "$MINIO_DOMAIN" == "private" ]]; then
 	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
 
 else
-	systemctl stop nginx
-	ufw allow http
-	certbot certonly --standalone -d '"$MINIO_DOMAIN",*."$MINIO_DOMAIN"' --staple-ocsp --agree-tos --register-unsafely-without-email --non-interactive
-	systemctl start nginx
-	ufw deny http
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+	until [ -f /opt/equinix/metal/tmp/exports/certs.done ]; do
+		logger "waiting for operator to finish allocating certs"
+		sleep 5
+	done
 
-	mkdir -p /opt/equinix/metal/tmp/export
-	echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/landing.html
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
+	#systemctl stop nginx
+	#ufw allow http
+	#certbot certonly -d "$MINIO_DOMAIN" -d *."$MINIO_DOMAIN" --staple-ocsp --agree-tos --register-unsafely-without-email --preferred-challenges dns
+	#systemctl start nginx
+	#ufw deny http
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+	#echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/landing.html
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/export/private.key
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /opt/equinix/metal/tmp/private.key
 
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
-	cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
+	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
+	#touch /opt/equinix/metal/tmp/exports/certs.done
 fi
 
 
