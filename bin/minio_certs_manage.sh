@@ -13,11 +13,11 @@ if test -f /opt/equinix/metal/tmp/minio_certs_manage.lock; then
 else
 		true
 fi
-mkdir -p /home/minio-user/.minio/certs
+mkdir -p /opt/equinix/metal/tmp/export/
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "minio_certs_manage: waiting for first instance to open certs / nginx"
 	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/certs.done; do
-		logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
+		logger "minio_certs_manage: "$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
 		sleep 5
 	done
 	mkdir -p /opt/equinix/metal/tmp/import
@@ -44,14 +44,15 @@ if [[ "$MINIO_DOMAIN" == "private" ]]; then
 	cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/certs/public.crt /opt/equinix/metal/tmp/export/public.crt
 
 else
-	until [ -f /opt/equinix/metal/tmp/exports/certs.done ]; do
-		logger "waiting for operator to finish allocating certs"
+	until [ -f /opt/equinix/metal/tmp/export/certs.done ]; do
+		logger "minio_certs_manage: waiting for operator to finish allocating certs"
 		sleep 5
 	done
 
 	#systemctl stop nginx
 	#ufw allow http
-	#certbot certonly -d "$MINIO_DOMAIN" -d *."$MINIO_DOMAIN" --staple-ocsp --agree-tos --register-unsafely-without-email --preferred-challenges dns
+	#certbot certonly --manual -d "$MINIO_DOMAIN" -d *."$MINIO_DOMAIN" --staple-ocsp --agree-tos --register-unsafely-without-email --preferred-challenges dns
+	#
 	#systemctl start nginx
 	#ufw deny http
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
@@ -62,7 +63,7 @@ else
 
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/export/public.crt
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /opt/equinix/metal/tmp/public.crt
-	#touch /opt/equinix/metal/tmp/exports/certs.done
+	#touch /opt/equinix/metal/tmp/export/certs.done
 fi
 
 
