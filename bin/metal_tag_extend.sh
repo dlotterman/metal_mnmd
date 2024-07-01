@@ -29,13 +29,13 @@ for TAG in $TAGS; do
             bash /opt/equinix/metal/bin/object_private_bootstrap.sh
             echo "$TAG" >> /opt/equinix/metal/tmp/updates.tombstone
         fi
-    elif [[ "$TAG" =~ "MMND_DEPLOY_" ]]; then
+    elif [[ "$TAG" =~ "MMNMD_DEPLOY_" ]]; then
         logger "entering deploy tag context $TAG"
         if grep -Fxq "$TAG" /opt/equinix/metal/tmp/updates.tombstone; then
             logger "tag $TAG found in tombstone, passing"
             exit 0
         else
-            logger "refreshing network"
+            logger "found deploy tag $TAG, deploying"
             bash /opt/equinix/metal/bin/metal_mnmd_deploy.sh
 			echo "$TAG" >> /opt/equinix/metal/tmp/updates.tombstone
         fi

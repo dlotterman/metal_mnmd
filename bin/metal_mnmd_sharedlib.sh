@@ -88,10 +88,14 @@ MINIO_VOL_STR=""
 for MGROUP in $MGROUPS; do
 	MGROUP_FIRST=$(echo $MGROUP | awk -F '-' '{print$1}')
 	MGROUP_LAST=$(echo $MGROUP | awk -F '-' '{print$NF}')
-	MGROUP_VOL_STR="https://$HOST_TYPE-{$MGROUP_FIRST...$MGROUP_LAST}.private:9000/mnt/disk{1...$NUM_DRIVES}/minio"
+	MGROUP_VOL_STR="https://$HOST_TYPE-{$MGROUP_FIRST...$MGROUP_LAST}.$MINIO_DOMAIN:9000/mnt/disk{1...$NUM_DRIVES}/minio"
 	NUM_IN_GROUP=$((MGROUP_LAST-MGROUP_FIRST+1))
 	MINIO_VOL_STR="${MINIO_VOL_STR} $MGROUP_VOL_STR"
 	NUM_INSTANCES=$((NUM_INSTANCES+NUM_IN_GROUP+1))
 done
 SORTED_STR_VOL=$(echo $MINIO_VOL_STR | xargs -n1 | sort | xargs)
 LBT_GROUPS=$(grep MNMD_LBT_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+MINIO_DOMAIN=$(grep MMNMD_DOMAIN /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+if test -z "$MINIO_DOMAIN"; then
+  MINIO_DOMAIN="private"
+fi

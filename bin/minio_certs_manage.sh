@@ -1,61 +1,44 @@
 logger "running /opt/equinix/metal/bin/minio_certs_manage.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
+
+if ! grep -Fxq "MMNMD_GROUP" /opt/equinix/metal/etc/metal_tag_extend.env; then
+	logger "dont see group tag applied, waiting"
+	exit 0
+fi
+
 if test -f /opt/equinix/metal/tmp/minio_certs_manage.lock; then
-		logger "certgen lock exists, exiting"
+		logger "certs lock exists, exiting"
 		exit 0
 else
 		true
 fi
-if test ! -f /root/certgen; then
-		wget -O certgen --quiet https://github.com/minio/certgen/releases/latest/download/certgen-linux-amd64
-        chmod +x certgen
-else
-		true
+if [[ "$MINIO_INSTANCE" != 2 ]]; then
+    logger "waiting for first instance to open certs / nginx"
+	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981; do
+		printf logger ""$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
+		sleep 5
+	done
+	mkdir -p /opt/equinix/metal/tmp/import
+	wget -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/export/private.key
+	wget -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/export/public.crt
+	mkdir -p /home/minio-user/.minio/certs
+	cp /opt/equinix/metal/tmp/import/private.key /opt/equinix/metal/tmp/export/private.key
+	cp /opt/equinix/metal/tmp/import/public.crt /opt/equinix/metal/tmp/export/public.crt
+	chown -R minio-user /home/minio-user/.minio/certs
+	touch /opt/equinix/metal/tmp/minio_certs_manage.lock
 fi
+
+certbot certonly --standalone -d $MINIO_DOMAIN --staple-ocsp -m ssl@$MINIO_DOMAIN --agree-tos
+
 mkdir -p /home/minio-user/.minio/certs
-cat > /home/minio-user/.minio/certs/private.key << EOL
------BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgLgSzXQp9uiCcuYi1
-pDkPNwSFFpENu2TyDmbwXkmGQu6hRANCAAS2uclYtEYZ1FaFkih0z2VYJJmH/hVe
-YH1NdzeAPf/XJM1+q6wdd1p7pO1L7fsXsg6opG0T8bBh6FIk5CVYeV53
------END PRIVATE KEY-----
-EOL
-cat > /opt/equinix/metal/tmp/private.key << EOL
------BEGIN PRIVATE KEY-----
-MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgLgSzXQp9uiCcuYi1
-pDkPNwSFFpENu2TyDmbwXkmGQu6hRANCAAS2uclYtEYZ1FaFkih0z2VYJJmH/hVe
-YH1NdzeAPf/XJM1+q6wdd1p7pO1L7fsXsg6opG0T8bBh6FIk5CVYeV53
------END PRIVATE KEY-----
-EOL
-cat > /home/minio-user/.minio/certs/public.crt << EOL
------BEGIN CERTIFICATE-----
-MIICDDCCAbKgAwIBAgIQTpNNQyfJf7G6jtcR/F8EOjAKBggqhkjOPQQDAjA3MRww
-GgYDVQQKExNDZXJ0Z2VuIERldmVsb3BtZW50MRcwFQYDVQQLDA5taW5pby11c2Vy
-QG0tMjAeFw0yNDA2MDkwMDE4NTlaFw0yNTA2MDkwMDE4NTlaMDcxHDAaBgNVBAoT
-E0NlcnRnZW4gRGV2ZWxvcG1lbnQxFzAVBgNVBAsMDm1pbmlvLXVzZXJAbS0yMFkw
-EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtrnJWLRGGdRWhZIodM9lWCSZh/4VXmB9
-TXc3gD3/1yTNfqusHXdae6TtS+37F7IOqKRtE/GwYehSJOQlWHled6OBnzCBnDAO
-BgNVHQ8BAf8EBAMCAqQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUw
-AwEB/zAdBgNVHQ4EFgQUR5eeush1hD4N5f0V3lH4gTEv7c8wRQYDVR0RBD4wPIIJ
-bG9jYWxob3N0gg5vYmplY3QucHJpdmF0ZYIHcHJpdmF0ZYIJKi5wcml2YXRlggsq
-LjAucHJpdmF0ZTAKBggqhkjOPQQDAgNIADBFAiBfX1vOG8uxz2amgyKz5qQQHdQX
-Pw6dFvow6KUnW95JhAIhAPElt5kWjfSsBZp6uF009QUwR6386VQ+OMCupnB7Oo1f
------END CERTIFICATE-----
-EOL
-cat > /opt/equinix/metal/tmp/public.crt << EOL
------BEGIN CERTIFICATE-----
-MIICDDCCAbKgAwIBAgIQTpNNQyfJf7G6jtcR/F8EOjAKBggqhkjOPQQDAjA3MRww
-GgYDVQQKExNDZXJ0Z2VuIERldmVsb3BtZW50MRcwFQYDVQQLDA5taW5pby11c2Vy
-QG0tMjAeFw0yNDA2MDkwMDE4NTlaFw0yNTA2MDkwMDE4NTlaMDcxHDAaBgNVBAoT
-E0NlcnRnZW4gRGV2ZWxvcG1lbnQxFzAVBgNVBAsMDm1pbmlvLXVzZXJAbS0yMFkw
-EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEtrnJWLRGGdRWhZIodM9lWCSZh/4VXmB9
-TXc3gD3/1yTNfqusHXdae6TtS+37F7IOqKRtE/GwYehSJOQlWHled6OBnzCBnDAO
-BgNVHQ8BAf8EBAMCAqQwEwYDVR0lBAwwCgYIKwYBBQUHAwEwDwYDVR0TAQH/BAUw
-AwEB/zAdBgNVHQ4EFgQUR5eeush1hD4N5f0V3lH4gTEv7c8wRQYDVR0RBD4wPIIJ
-bG9jYWxob3N0gg5vYmplY3QucHJpdmF0ZYIHcHJpdmF0ZYIJKi5wcml2YXRlggsq
-LjAucHJpdmF0ZTAKBggqhkjOPQQDAgNIADBFAiBfX1vOG8uxz2amgyKz5qQQHdQX
-Pw6dFvow6KUnW95JhAIhAPElt5kWjfSsBZp6uF009QUwR6386VQ+OMCupnB7Oo1f
------END CERTIFICATE-----
-EOL
+
+cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
+cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
+
+mkdir -p /opt/equinix/metal/tmp/export
+echo "mmnmd export dir" > mkdir -p /opt/equinix/metal/tmp/export/index.html
+cp /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem mkdir -p /opt/equinix/metal/tmp/export/private.key
+cp /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem mkdir -p /opt/equinix/metal/tmp/export/public.crt
+
 chown -R minio-user /home/minio-user/.minio/certs
 touch /opt/equinix/metal/tmp/minio_certs_manage.lock

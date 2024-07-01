@@ -27,6 +27,8 @@ server {
    proxy_buffering off;
    proxy_request_buffering off;
 
+   ssl_protocols TLSv1.2 TLSv1.3;
+
    location / {
       proxy_set_header Host \$http_host;
       proxy_set_header X-Real-IP \$remote_addr;
@@ -55,6 +57,20 @@ EOL
 	done
 	echo "  }" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 done
+
+		cat > /etc/nginx/sites-enabled/export.conf << EOL
+server {
+   listen       9981;
+   server_name  $HOST_TYPE-$MINIO_INSTANCE.$MINIO_DOMAIN;
+   root 		/opt/equinix/metal/tmp/export/;
+
+   location /export {
+   index index.html;
+   autoindex on;
+   }
+}
+
+EOL
 
 systemctl enable --now nginx
 systemctl restart nginx

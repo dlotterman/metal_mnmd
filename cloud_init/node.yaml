@@ -34,6 +34,7 @@ packages:
   - apt-transport-https
   - prometheus-alertmanager
   - nginx-light
+  - certbot
 
 runcmd:
   - [systemctl, enable, --now, ufw]
