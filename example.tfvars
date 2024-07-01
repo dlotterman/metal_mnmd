@@ -24,10 +24,9 @@ l_node_tags = ["MMNMD_SUBNET_172.16.246","MMNMD_VLAN_246","MMNMD_GROUP1_2-5",
 "MMNMD_ROUTE3_172.16.247.0","MMNMD_ADNS3_172.16.247.2-172.16.247.3:247.private",
 "MNMD_LBT_GROUP1_2-5:c-:248.private:object.248.private:2248"]
 
-z_node_count = 6
+z_node_count = 0
 
 c_node_count = 4
 
-d_node_count = 4
+d_node_count = 0
 
-d_node_plan = "s3.xlarge.x86"
