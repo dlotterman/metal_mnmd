@@ -102,4 +102,9 @@ for MGROUP in $MGROUPS; do
 	NUM_INSTANCES=$((NUM_INSTANCES+NUM_IN_GROUP+1))
 done
 SORTED_STR_VOL=$(echo $MINIO_VOL_STR | xargs -n1 | sort | xargs)
-LBT_GROUPS=$(grep MNMD_LBT_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+LBT_GROUPS=$(grep MMNMD_LBT_GROUP /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+
+MINIO_PASSWORD=$(grep MMNMD_MPASS /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+if test -z "$MINIO_PASSWORD"; then
+  MINIO_PASSWORD="Equinixmetal05"
+fi

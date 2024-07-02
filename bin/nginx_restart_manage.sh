@@ -14,8 +14,7 @@ if [ -n "$LBT_GROUPS" ]; then
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
-   listen       $LBGROUP_PORT;
-   listen  [::]:$LBGROUP_PORT;
+   listen       $LBGROUP_PORT ssl;
    server_name  $LBGROUP_HOSTNAME;
 
    # Allow special characters in headers
@@ -28,7 +27,8 @@ server {
    proxy_request_buffering off;
 
    ssl_protocols TLSv1.2 TLSv1.3;
-
+   ssl_certificate     /opt/equinix/metal/tmp/public.crt;
+   ssl_certificate_key /opt/equinix/metal/tmp/private.keyclient_loop:
    location / {
       proxy_set_header Host \$http_host;
       proxy_set_header X-Real-IP \$remote_addr;

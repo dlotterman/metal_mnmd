@@ -1,7 +1,7 @@
 logger "starting /opt/equinix/metal/bin/object_private_bootstrap.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 if test ! -f /opt/equinix/metal/tmp/object_private_bootstrap.lock; then
-    mc --insecure alias set object_private https://127.0.0.1:9000 minioadmin Equinixmetal05
+    mc --insecure alias set object_private https://127.0.0.1:9000 minioadmin $MINIO_PASSWORD
     cp -f /opt/equinix/metal/bin/minio_schema_backup.sh /etc/cron.hourly/
     chmod +x /opt/equinix/metal/bin/minio_schema_backup.sh
     if [[ "$MINIO_INSTANCE" == 2 ]]; then
