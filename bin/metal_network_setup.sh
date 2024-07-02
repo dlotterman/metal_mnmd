@@ -24,12 +24,20 @@ done
 
 ifup $BOND.$MINIO_VLAN
 
+# MinIO service
 ufw allow from $MINIO_SUBNET.0/24 to any port 9000
+# MinIO admin
 ufw allow from $MINIO_SUBNET.0/24 to any port 9001
+# nginx file exports for cert syncing
 ufw allow from $MINIO_SUBNET.0/24 to any port 9981
+# dnsmasq for internal dns fun
 ufw allow from $MINIO_SUBNET.0/24 to any port 53
+# node_exporter for prometheus / grafana
 ufw allow from $MINIO_SUBNET.0/24 to any port 9100
+# MinIO warp benchmark service
 ufw allow from $MINIO_SUBNET.0/24 to any port 7761
+# nginx_exporter for prometheus / grafana
+ufw allow from $MINIO_SUBNET.0/24 to any port 9113
 
 ip link set dev $BOND mtu 9000
 ip link set dev $BOND.$MINIO_VLAN mtu 9000

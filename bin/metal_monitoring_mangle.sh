@@ -16,6 +16,8 @@ if test ! -f /opt/equinix/metal/tmp/metal_monitoring_mangle.lock; then
 else
     true
 fi
+
+# String foo for node_exporter
 TARGETS_STR=""
 for i in $(seq 2 $NUM_INSTANCES); do
     INSTANCE_STR="\"$HOST_TYPE-$i.private:9100\","
@@ -23,6 +25,16 @@ for i in $(seq 2 $NUM_INSTANCES); do
 done
 
 CLEAN_TARGETS_STR=${TARGETS_STR::-1}
+
+# String for for nginx_exporter
+NGINX_EX_TARGETS_STR=""
+for i in $(seq 2 $NUM_INSTANCES); do
+    NGINX_EX_INSTANCE_STR="\"$HOST_TYPE-$i.private:9113\","
+    NGINX_EX_TARGETS_STR="${NGINX_EX_TARGETS_STR} $NGINX_EX_INSTANCE_STR"
+done
+
+NGINX_EX_CLEAN_TARGETS_STR=${NGINX_EX_TARGETS_STR::-1}
+
 cat > /etc/default/prometheus << EOL
 ARGS="--web.listen-address=:9005"
 EOL
@@ -59,6 +71,10 @@ scrape_configs:
     static_configs:
       - targets: [$CLEAN_TARGETS_STR]
 
+  - job_name: "nginx-prometheus-exporter"
+    static_configs:
+      - targets: [$NGINX_EX_CLEAN_TARGETS_STR]
+
 EOL
 if test -f /opt/equinix/metal/tmp/minio_scrape_config.yaml; then
     BEARER_TOKEN=$(grep bearer_token /opt/equinix/metal/tmp/minio_scrape_config.yaml | awk '{print $2}')
@@ -82,7 +98,7 @@ rsync -a /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/datasources/ /etc/grafana
 rsync /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/object_private.yaml /etc/grafana/provisioning/dashboards/
 chown grafana:grafana /var/lib/grafana/dashboards
 
-
+cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/nginx-exporter-default.file /etc/default/prometheus-nginx-exporter
 
 systemctl stop prometheus
 systemctl stop grafana-server

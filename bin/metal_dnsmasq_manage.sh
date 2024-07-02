@@ -30,6 +30,10 @@ for i in $(seq 2 $NUM_INSTANCES); do
         echo "host-record=object.$MINIO_VLAN.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
         echo "host-record=$HOST_TYPE-$i-$MINIO_VLAN.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
         echo "host-record=$HOST_TYPE-$i.$MINIO_VLAN.$MINIO_DOMAIN,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
+		if [[ "$MINIO_DOMAIN" != "private" ]]; then
+			echo "host-record=$HOST_TYPE-$i.private,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
+			echo "host-record=object.private,$MINIO_SUBNET.$i" >> /etc/dnsmasq.d/minio.conf
+		fi
 
 done
 for LINE in $ADNS; do

@@ -14,6 +14,15 @@ if [ -n "$LBT_GROUPS" ]; then
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
+    listen $MINIO_SUBNET.$MINIO_INSTANCE:8080;
+
+    server_name _;
+
+    location /status {
+        stub_status;
+    }
+}
+server {
    listen       $MINIO_SUBNET.$MINIO_INSTANCE:$LBGROUP_PORT ssl;
    server_name  $LBGROUP_HOSTNAME;
 
@@ -46,6 +55,7 @@ server {
 	  proxy_ssl_verify       off;
 	  proxy_ssl_session_reuse on;
    }
+
 }
 upstream object_private_$LBGROUP_PORT {
    least_conn;

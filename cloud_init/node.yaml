@@ -124,4 +124,5 @@ write_files:
       bash /opt/equinix/metal/bin/minio_binary_mangle.sh
       bash /opt/equinix/metal/bin/minio_certs_manage.sh
       bash /opt/equinix/metal/bin/minio_etc_manage.sh
+      bash /opt/equinix/metal/bin/metal_linux_settings.sh
       bash /opt/equinix/metal/bin/nginx_restart_manage.sh

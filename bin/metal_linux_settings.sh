@@ -1,4 +1,4 @@
-logger "running /opt/equinix/metal/bin/metal_linux_settings.sh"
+logger "metal_linux_settings: running /opt/equinix/metal/bin/metal_linux_settings.sh"
 
 # copied from https://github.com/zkryakgul/minio-kernel-tuning
 
@@ -89,6 +89,7 @@ logger "Enabling THP madvise"
 echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 
 if test -n "$HDD_ENABLED"; then
+	logger "setting HDD performance settings"
 	for i in $(echo /sys/block/*/queue/iosched 2>/dev/null); do
 		iosched_dir=$(echo "${i}" | awk '/iosched/ {print $1}')
 		[ -z "${iosched_dir}" ] && {
@@ -116,3 +117,4 @@ if test -n "$HDD_ENABLED"; then
 		}
 	done
 fi
+logger "metal_linux_settings: done"

@@ -1,0 +1,1 @@
+ARGS="-nginx.scrape-uri=http://localhost:8080/status"

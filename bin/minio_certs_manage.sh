@@ -51,6 +51,7 @@ else
 		sleep 5
 	done
 
+    # source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 	#certbot certonly --manual -d "$MINIO_DOMAIN" -d *."$MINIO_DOMAIN" --staple-ocsp --agree-tos --register-unsafely-without-email --preferred-challenges dns
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
