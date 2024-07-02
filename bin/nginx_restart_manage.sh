@@ -14,15 +14,6 @@ if [ -n "$LBT_GROUPS" ]; then
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
-    listen $MINIO_SUBNET.$MINIO_INSTANCE:8080;
-
-    server_name _;
-
-    location /status {
-        stub_status;
-    }
-}
-server {
    listen       $MINIO_SUBNET.$MINIO_INSTANCE:$LBGROUP_PORT ssl;
    server_name  $LBGROUP_HOSTNAME;
 
@@ -85,6 +76,7 @@ EOL
 ufw allow $LBGROUP_PORT/tcp
 mkdir -p /etc/systemd/system/nginx.service.d/
 cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx_overide.conf /etc/systemd/system/nginx.service.d/override.conf
+cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx.conf /etc/nginx/nginx.conf
 systemctl daemon-reload
 systemctl enable --now nginx
 systemctl restart nginx
