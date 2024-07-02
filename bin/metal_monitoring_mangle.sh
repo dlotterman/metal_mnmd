@@ -2,6 +2,8 @@ logger "running /opt/equinix/metal/bin/metal_monitoring_mangle.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
 cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/nginx-exporter-default.file /etc/default/prometheus-nginx-exporter
+systemctl restart prometheus-node-exporter
+systemctl restart prometheus-nginx-exporter
 
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "only mangle monitoring on node 2"
