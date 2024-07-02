@@ -1,9 +1,9 @@
 #!/bin/bash
 if test ! -f /opt/equinix/metal/tmp/metal_network_setup.lock; then
-		logger "running /opt/equinix/metal/bin/metal_network_setup.sh"
+		logger "metal_network_setup: running /opt/equinix/metal/bin/metal_network_setup.sh"
 		cp /etc/network/interfaces /opt/equinix/metal/tmp/interfaces.orig
 else
-		logger "refreshing network"
+		logger "metal_network_setup: refreshing network"
 		cp -f /opt/equinix/metal/tmp/interfaces.orig /etc/network/interfaces
 fi
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
@@ -35,7 +35,7 @@ ip link set dev $BOND mtu 9000
 ip link set dev $BOND.$MINIO_VLAN mtu 9000
 
 for ANETWORK in $ANETWORKS; do
-    logger "adding $ANETWORK"
+    logger "metal_network_setup: adding $ANETWORK"
 	echo "" >> /etc/network/interfaces
 	echo "" >> /etc/network/interfaces
 	ANETWORKVLAN=$(echo $ANETWORK | awk -F '-' '{print$1}')
@@ -60,9 +60,11 @@ for ANETWORK in $ANETWORKS; do
     ip link set dev $BOND.$ANETWORKVLAN mtu 9000
 done
 
-if [ -n "$MMNMD_FIREWALL_HOLE" ]; then
-    logger "punching hole in firewall for $MMNMD_FIREWALL_HOLE"
-    ufw allow from $MMNMD_FIREWALL_HOLE to any
-fi
+for FW_HOLE in $MMNMD_FIREWALL_HOLES; do
+	logger "metal_network_setup: punching $FW_HOLE in UFW"
+	ufw allow from $FW_HOLE to any
+done
 
 touch /opt/equinix/metal/tmp/metal_network_setup.lock
+
+logger "metal_network_setup: done"

@@ -14,12 +14,14 @@ else
 		true
 fi
 mkdir -p /opt/equinix/metal/tmp/export/
+mkdir -p /home/minio-user/.minio/certs/
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "minio_certs_manage: waiting for first instance to open certs / nginx"
 	until curl --output /dev/null --silent --head --fail http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/certs.done; do
 		logger "minio_certs_manage: "$HOST_TYPE"-2."$MINIO_DOMAIN":9981 still not up, sleeping"
 		sleep 5
 	done
+	logger "minio_certs_manage: "$HOST_TYPE"-2."$MINIO_DOMAIN":9981 is up, progressing"
 	mkdir -p /opt/equinix/metal/tmp/import
 	wget -q -O /opt/equinix/metal/tmp/import/private.key http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/private.key
 	wget -q -O /opt/equinix/metal/tmp/import/public.crt http://"$HOST_TYPE"-2."$MINIO_DOMAIN":9981/public.crt
@@ -49,12 +51,7 @@ else
 		sleep 5
 	done
 
-	#systemctl stop nginx
-	#ufw allow http
 	#certbot certonly --manual -d "$MINIO_DOMAIN" -d *."$MINIO_DOMAIN" --staple-ocsp --agree-tos --register-unsafely-without-email --preferred-challenges dns
-	#
-	#systemctl start nginx
-	#ufw deny http
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/privkey.pem /home/minio-user/.minio/certs/private.key
 	#cp -f /etc/letsencrypt/live/$MINIO_DOMAIN/fullchain.pem /home/minio-user/.minio/certs/public.crt
 	#echo "mmnmd export dir" > /opt/equinix/metal/tmp/export/landing.html

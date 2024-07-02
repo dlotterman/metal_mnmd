@@ -79,7 +79,7 @@ HOST_TYPE=$(hostname | awk -F '-' '{print$1}')
 ANETWORKS=$(grep MMNMD_ANETWORK /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 AROUTES=$(grep MMNMD_AROUTE /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 MINIO_ROUTES=$(grep MMNMD_ROUTE /opt/equinix/metal/etc/metal_tag_extend.env | awk -F "_" '{print$NF}')
-MMNMD_FIREWALL_HOLE=$(grep MMNMD_FIREWALL_HOLE_ /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
+MMNMD_FIREWALL_HOLES=$(grep MMNMD_FIREWALL_HOLE /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 ADNS=$(grep MMNMD_ADNS /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 MINIO_DOMAIN=$(grep MMNMD_DOMAIN /opt/equinix/metal/etc/metal_tag_extend.env | awk -F '_' '{print$NF}')
 if test -z "$MINIO_DOMAIN"; then

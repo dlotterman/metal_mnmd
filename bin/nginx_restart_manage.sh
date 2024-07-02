@@ -28,7 +28,7 @@ server {
 
    ssl_protocols TLSv1.2 TLSv1.3;
    ssl_certificate     /opt/equinix/metal/tmp/public.crt;
-   ssl_certificate_key /opt/equinix/metal/tmp/private.keyclient_loop:
+   ssl_certificate_key /opt/equinix/metal/tmp/private.key;
    location / {
       proxy_set_header Host \$http_host;
       proxy_set_header X-Real-IP \$remote_addr;
