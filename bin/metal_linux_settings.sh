@@ -35,8 +35,8 @@ net.core.wmem_default = 4194304
 net.core.optmem_max = 4194304
 
 # increase memory thresholds to prevent packet dropping:
-net.ipv4.tcp_rmem = "4096 87380 4194304"
-net.ipv4.tcp_wmem = "4096 65536 4194304"
+net.ipv4.tcp_rmem = 4096 87380 4194304
+net.ipv4.tcp_wmem = 4096 65536 4194304
 
 # enable low latency mode for TCP:
 net.ipv4.tcp_low_latency = 1
@@ -88,30 +88,31 @@ sysctl --quiet --load sysctl.conf && rm -f sysctl.conf
 logger "Enabling THP madvise"
 echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
 
-
-for i in $(echo /sys/block/*/queue/iosched 2>/dev/null); do
-    iosched_dir=$(echo "${i}" | awk '/iosched/ {print $1}')
-    [ -z "${iosched_dir}" ] && {
-        continue
-    }
-    ## Change each disk ioscheduler to be "deadline"
-    ## Deadline dispatches I/Os in batches. A batch is a
-    ## sequence of either read or write I/Os which are in
-    ## increasing LBA order (the one-way elevator). After
-    ## processing each batch, the I/O scheduler checks to
-    ## see whether write requests have been starved for too
-    ## long, and then decides whether to start a new batch
-    ## of reads or writes
-    path=$(dirname "${iosched_dir}")
-    [ -f "${path}/scheduler" ] && {
-        echo "deadline" > "${path}/scheduler" 2>/dev/null || true
-    }
-    ## This controls how many requests may be allocated
-    ## in the block layer for read or write requests.
-    ## Note that the total allocated number may be twice
-    ## this amount, since it applies only to reads or
-    ## writes (not the accumulate sum).
-    [ -f "${path}/nr_requests" ] && {
-        echo "256" > "${path}/nr_requests" 2>/dev/null || true
-    }
-done
+if test -n "$HDD_ENABLED"; then
+	for i in $(echo /sys/block/*/queue/iosched 2>/dev/null); do
+		iosched_dir=$(echo "${i}" | awk '/iosched/ {print $1}')
+		[ -z "${iosched_dir}" ] && {
+			continue
+		}
+		## Change each disk ioscheduler to be "deadline"
+		## Deadline dispatches I/Os in batches. A batch is a
+		## sequence of either read or write I/Os which are in
+		## increasing LBA order (the one-way elevator). After
+		## processing each batch, the I/O scheduler checks to
+		## see whether write requests have been starved for too
+		## long, and then decides whether to start a new batch
+		## of reads or writes
+		path=$(dirname "${iosched_dir}")
+		[ -f "${path}/scheduler" ] && {
+			echo "deadline" > "${path}/scheduler" 2>/dev/null || true
+		}
+		## This controls how many requests may be allocated
+		## in the block layer for read or write requests.
+		## Note that the total allocated number may be twice
+		## this amount, since it applies only to reads or
+		## writes (not the accumulate sum).
+		[ -f "${path}/nr_requests" ] && {
+			echo "256" > "${path}/nr_requests" 2>/dev/null || true
+		}
+	done
+fi

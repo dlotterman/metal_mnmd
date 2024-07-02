@@ -36,6 +36,7 @@ packages:
   - nginx-light
   - certbot
   - prometheus-nginx-exporter
+  - s3cmd
 
 runcmd:
   - [systemctl, enable, --now, ufw]

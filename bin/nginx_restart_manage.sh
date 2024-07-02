@@ -73,7 +73,8 @@ server {
 EOL
 
 ufw allow $LBGROUP_PORT/tcp
-cp cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx_overide.conf /etc/systemd/system/nginx.service.d/override.conf
+mkdir -p /etc/systemd/system/nginx.service.d/
+cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx_overide.conf /etc/systemd/system/nginx.service.d/override.conf
 systemctl daemon-reload
 systemctl enable --now nginx
 systemctl restart nginx
