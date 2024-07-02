@@ -14,18 +14,7 @@ if [ -n "$LBT_GROUPS" ]; then
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
-	listen 8080;
-	# Optionally: allow access only from localhost
-	# listen 127.0.0.1:8080;
-
-	server_name _;
-
-	location /status {
-		stub_status;
-	}
-}
-server {
-   listen       $MINIO_SUBNET.$MINIO_INSTANCE:$LBGROUP_PORT ssl;
+   listen       $LBGROUP_PORT ssl;
    server_name  $LBGROUP_HOSTNAME;
 
    # Allow special characters in headers
