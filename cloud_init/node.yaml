@@ -35,6 +35,7 @@ packages:
   - prometheus-alertmanager
   - nginx-light
   - certbot
+  - prometheus-nginx-exporter
 
 runcmd:
   - [systemctl, enable, --now, ufw]

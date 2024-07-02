@@ -14,7 +14,7 @@ if [ -n "$LBT_GROUPS" ]; then
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
-   listen       $LBGROUP_PORT ssl;
+   listen       $MINIO_SUBNET.$MINIO_INSTANCE:$LBGROUP_PORT ssl;
    server_name  $LBGROUP_HOSTNAME;
 
    # Allow special characters in headers
@@ -26,7 +26,6 @@ server {
    proxy_buffering off;
    proxy_request_buffering off;
 
-   ssl_protocols TLSv1.2 TLSv1.3;
    ssl_certificate     /opt/equinix/metal/tmp/public.crt;
    ssl_certificate_key /opt/equinix/metal/tmp/private.key;
    location / {
@@ -34,7 +33,7 @@ server {
       proxy_set_header X-Real-IP \$remote_addr;
       proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
       proxy_set_header X-Forwarded-Proto \$scheme;
-
+	  real_ip_header X-Real-IP;
       proxy_connect_timeout 300;
       # Default is HTTP/1, keepalive is only enabled in HTTP/1.1
       proxy_http_version 1.1;
@@ -73,6 +72,9 @@ server {
 
 EOL
 
+ufw allow $LBGROUP_PORT/tcp
+cp cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx_overide.conf /etc/systemd/system/nginx.service.d/override.conf
+systemctl daemon-reload
 systemctl enable --now nginx
 systemctl restart nginx
 
