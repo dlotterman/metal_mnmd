@@ -1,6 +1,8 @@
 logger "running /opt/equinix/metal/bin/metal_monitoring_mangle.sh"
 source /opt/equinix/metal/bin/metal_mnmd_sharedlib.sh
 
+cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/nginx-exporter-default.file /etc/default/prometheus-nginx-exporter
+
 if [[ "$MINIO_INSTANCE" != 2 ]]; then
     logger "only mangle monitoring on node 2"
     exit 0
@@ -97,8 +99,6 @@ rsync -a /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/dashboards/ /var/lib/graf
 rsync -a /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/datasources/ /etc/grafana/provisioning/datasources/
 rsync /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/object_private.yaml /etc/grafana/provisioning/dashboards/
 chown grafana:grafana /var/lib/grafana/dashboards
-
-cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/grafana/nginx-exporter-default.file /etc/default/prometheus-nginx-exporter
 
 systemctl stop prometheus
 systemctl stop grafana-server
