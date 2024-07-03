@@ -21,7 +21,7 @@ for DRIVE in $MINIO_DRIVES ; do
 		sync
 		DRIVE_UUID=$(ls -al /dev/disk/by-uuid/ | grep $SHORT_NAME | awk '{print$9}')
 		if test -z "$DRIVE_UUID"; then
-			logger "could not find $SHORT_NAME, trying again"
+			logger "could not find $SHORT_NAME for /mnt/disk$COUNTER, trying again"
 			sync
 			udevadm settle
 			partprobe

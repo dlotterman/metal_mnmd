@@ -5,6 +5,7 @@ logger "running /opt/equinix/metal/bin/nginx_restart_manage.sh"
 if [ -n "$LBT_GROUPS" ]; then
     rm /etc/nginx/sites-enabled/*
 	for LBGROUP in $LBT_GROUPS; do
+		logger "nginx_restart_manage: working on $LBGROUP"
 		LBGROUP_FIRST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$1}')
 		LBGROUP_LAST=$(echo $LBGROUP | awk -F ':' '{print$1}' | awk -F '-' '{print$NF}')
 		LBGROUP_FIRSTNAME=$(echo $LBGROUP | awk -F ':' '{print$2}')
@@ -50,16 +51,17 @@ server {
 }
 upstream object_private_$LBGROUP_PORT {
    least_conn;
-
 EOL
 	for i in $(seq 2 $LBGROUP_LAST); do
-		echo "server "$LBGROUP_FIRSTNAME""$i"."$LBGROUP_LASTNAME":9000;" >> /etc/nginx/sites-enabled/$LBGROUP_PORT.conf
+		logger "nginx_restart_manage: running $i for $LBGROUP"
+		echo "	server "$LBGROUP_FIRSTNAME""$i"."$LBGROUP_LASTNAME":9000;" >> /etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 	done
-	echo "  }" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
+	echo "}" >>/etc/nginx/sites-enabled/$LBGROUP_PORT.conf
 done
 fi
-		logger "nginx_restart_manage: writing /etc/nginx/sites-enabled/export.conf"
-		cat > /etc/nginx/sites-enabled/export.conf << EOL
+
+logger "nginx_restart_manage: writing /etc/nginx/sites-enabled/export.conf"
+cat > /etc/nginx/sites-enabled/export.conf << EOL
 server {
    listen       $MINIO_SUBNET.$MINIO_INSTANCE:9981;
    server_name  $HOST_TYPE-$MINIO_INSTANCE.$MINIO_DOMAIN;

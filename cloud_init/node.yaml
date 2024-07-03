@@ -115,14 +115,14 @@ write_files:
       systemctl daemon-reload
       systemctl enable --now metal_tag_extend.timer
       systemctl start metal_tag_extend.service
-      sleep 5
+      sleep 70
       bash /opt/equinix/metal/bin/metal_nvme_manage.sh
       bash /opt/equinix/metal/bin/metal_disk_setup.sh
       bash /opt/equinix/metal/bin/metal_network_setup.sh
       bash /opt/equinix/metal/bin/metal_dnsmasq_manage.sh
       bash /opt/equinix/metal/bin/metal_monitoring_mangle.sh
       bash /opt/equinix/metal/bin/minio_binary_mangle.sh
-      bash /opt/equinix/metal/bin/minio_certs_manage.sh
       bash /opt/equinix/metal/bin/minio_etc_manage.sh
       bash /opt/equinix/metal/bin/metal_linux_settings.sh
+      bash /opt/equinix/metal/bin/minio_certs_manage.sh
       bash /opt/equinix/metal/bin/nginx_restart_manage.sh

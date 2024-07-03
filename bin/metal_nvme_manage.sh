@@ -57,8 +57,9 @@ for DRIVE in $NVME_DRIVES; do
 		nvme ns-rescan $DRIVE
 	done
 done
+sleep 15
 partprobe
-sleep 1
+sleep 5
 sync
 udevadm settle
 touch /opt/equinix/metal/tmp/metal_nvme_manage.lock
