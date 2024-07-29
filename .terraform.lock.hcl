@@ -5,6 +5,7 @@ provider "registry.terraform.io/equinix/equinix" {
   version     = "1.39.0"
   constraints = "~> 1.14"
   hashes = [
+    "h1:bMiQLpQnm52r+U54cgXPslaD/kkRYYcyGsaOWXFR6dk=",
     "h1:pwRR4WGv4uVYA6SKUMBYV+b2JGXDHSokFrHOmuN2JRs=",
     "zh:06645bf4573efa87e8d7a4ecce543c39c20e61f1a8b63b1df8dc4d702ea02db5",
     "zh:06de8fae572e67659e34aff1714acd66ce48798ae1186c521f19b1f24437c56f",
@@ -26,6 +27,7 @@ provider "registry.terraform.io/equinix/equinix" {
 provider "registry.terraform.io/hashicorp/cloudinit" {
   version = "2.3.4"
   hashes = [
+    "h1:/Ty/HXg0Bti5T+Zk6XvhwEHyKGiOV5LzCrbLiekjuLU=",
     "h1:cVIIhnXweOHavu1uV2bdKScTjLbM1WnKM/25wqYBJWo=",
     "zh:09f1f1e1d232da96fbf9513b0fb5263bc2fe9bee85697aa15d40bb93835efbeb",
     "zh:381e74b90d7a038c3a8dcdcc2ce8c72d6b86da9f208a27f4b98cabe1a1032773",

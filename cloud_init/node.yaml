@@ -37,19 +37,20 @@ packages:
   - certbot
   - prometheus-nginx-exporter
   - s3cmd
+  - grub-efi-amd64
 
 runcmd:
   - [systemctl, enable, --now, ufw]
   - [ufw, default, allow, outgoing]
   - [ufw, default, deny, incoming]
+  - [ufw, allow, from, 10.0.0.0/8]
+  - [ufw, limit, ssh]
   - [ufw, enable]
   - [modprobe, 8021q]
   - [rsync, -av, "/root/.ssh", /home/adminuser/]
   - [chown, -R, "adminuser:cloud-users", "/home/adminuser/"]
   - [sed, -i, -e, '/^#MaxAuthTries/s/^.*$/MaxAuthTries 5/', /etc/ssh/sshd_config]
   - [sed, -i, -e, '/^X11Forwarding/s/^.*$/X11Forwarding no/', /etc/ssh/sshd_config]
-  - [systemctl, daemon-reload]
-  - [systemctl, enable, --now, metal_tag_extend.timer]
   - [systemctl, disable, --now, ssh]
   - [systemctl, enable, --now, ssh]
   - [systemctl, reset-failed]

@@ -13,6 +13,7 @@ if [ -n "$LBT_GROUPS" ]; then
 		LBGROUP_HOSTNAME=$(echo $LBGROUP | awk -F ':' '{print$4}')
 		LBGROUP_PORT=$(echo $LBGROUP | awk -F ':' '{print$NF}')
 		LB_NUM_IN_GROUP=$((LBGROUP_LAST-LBGROUP_FIRST+1))
+                ufw allow $LBGROUP_PORT/tcp
 		cat > /etc/nginx/sites-enabled/$LBGROUP_PORT.conf << EOL
 server {
    listen       $LBGROUP_PORT ssl;
@@ -75,7 +76,6 @@ server {
 
 EOL
 
-ufw allow $LBGROUP_PORT/tcp
 mkdir -p /etc/systemd/system/nginx.service.d/
 cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx_overide.conf /etc/systemd/system/nginx.service.d/override.conf
 cp -f /opt/equinix/metal/tmp/metal_mnmd/etc/nginx/nginx.conf /etc/nginx/nginx.conf
